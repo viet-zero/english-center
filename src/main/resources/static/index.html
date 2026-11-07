@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>English Center | Trang chủ</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 1rem/1.6 system-ui, sans-serif; color: #142a36; background: #f4f8f7; }
+    .wrap { width: min(68rem, 90%); margin-inline: auto; }
+    nav { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; gap: 1rem; }
+    a { color: inherit; }
+    .brand { font-weight: 800; text-decoration: none; }
+    .hero { background: #123d42; color: #fff; padding: clamp(3rem, 9vw, 7rem) 0; }
+    .eyebrow { color: #a8e6cd; font-weight: 700; letter-spacing: .08em; }
+    h1 { font-size: clamp(2.5rem, 7vw, 5rem); line-height: 1.06; max-width: 15ch; margin: .4em 0; }
+    .intro { max-width: 48ch; }
+    .button { display: inline-block; margin-top: 1rem; padding: .7rem 1.1rem; border-radius: .5rem; background: #bdf4d9; color: #123d42; font-weight: 700; text-decoration: none; }
+    section { padding: 3rem 0; }
+    .courses { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 1rem; }
+    article { background: #fff; border: 1px solid #d8e5e1; border-radius: .75rem; padding: 1.25rem; }
+    article h3 { margin-top: 0; }
+    article p { margin-bottom: 0; }
+    footer { border-top: 1px solid #d8e5e1; padding: 1.5rem 0; }
+  </style>
+</head>
+<body>
+  <header class="wrap">
+    <nav aria-label="Điều hướng chính">
+      <a class="brand" href="/">English Center</a>
+      <a href="#khoa-hoc">Khóa học</a>
+    </nav>
+  </header>
+  <main>
+    <div class="hero">
+      <div class="wrap">
+        <p class="eyebrow">ENGLISH CENTER</p>
+        <h1>Tự tin dùng tiếng Anh mỗi ngày</h1>
+        <p class="intro">Chọn lộ trình phù hợp với mục tiêu của bạn, từ xây nền tảng đến giao tiếp và luyện thi IELTS.</p>
+        <a class="button" href="#khoa-hoc">Khám phá khóa học</a>
+      </div>
+    </div>
+    <section class="wrap" id="khoa-hoc">
+      <h2>Khóa học tiếng Anh</h2>
+      <div class="courses">
+        <article><h3>Tiếng Anh nền tảng</h3><p>Củng cố phát âm, từ vựng và ngữ pháp để bắt đầu học tiếng Anh.</p></article>
+        <article><h3>Tiếng Anh giao tiếp</h3><p>Luyện nghe và nói qua các tình huống trong đời sống và công việc.</p></article>
+        <article><h3>Luyện thi IELTS</h3><p>Luyện bốn kỹ năng và làm quen với cấu trúc đề thi IELTS.</p></article>
+      </div>
+    </section>
+  </main>
+  <footer><div class="wrap">English Center</div></footer>
+</body>
+</html>
