@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "giao_dich")
+@Table(name = "giao_dich", uniqueConstraints = @jakarta.persistence.UniqueConstraint(columnNames = "reference_code"))
 public class Payment {
 
     @Id

@@ -15,6 +15,7 @@ public class Invoice {
 
     private String studentId;
 
+    @jakarta.persistence.Transient
     private String voucherId;
 
     private LocalDateTime createdAt;
