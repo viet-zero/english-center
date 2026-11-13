@@ -53,6 +53,13 @@ export const api = {
   grade: (classId, examId, enrollmentId, score) => json(
     '/academics/teacher/classes/' + id(classId) + '/exams/' + id(examId) + '/grades/' + id(enrollmentId),
     { score }, 'PUT'),
+  timetable: (scope, start) => request((scope === 'training' ? '/training' : '/academics/' + scope)
+    + '/timetable?start=' + id(start)),
+  createStudent: data => json('/users/students', data),
+  createEmployee: data => json('/users/employees', data),
+  trainingCourses: () => request('/training/courses'),
+  trainingModules: courseId => request('/training/courses/' + id(courseId) + '/modules'),
+  trainingClasses: moduleId => request('/training/modules/' + id(moduleId) + '/classes'),
   me: () => request('/auth/me'),
   async login(username, password) {
     await post('/auth/login', new URLSearchParams({ username, password }),

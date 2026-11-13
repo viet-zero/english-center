@@ -1,9 +1,21 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import AcademicsPage from './pages/AcademicsPage.jsx';
-import LoginPage from './pages/LoginPage.jsx';
+import AdminPage from './pages/AdminPage.jsx';
 import CoursesPage from './pages/CoursesPage.jsx';
+import LoginPage from './pages/LoginPage.jsx';
+import TrainingPage from './pages/TrainingPage.jsx';
 import TuitionPage, { PaymentForm } from './pages/TuitionPage.jsx';
+import WeekPage from './pages/WeekPage.jsx';
 import { api } from './services/api.js';
+
+const menus = {
+  STUDENT: ['Học viên', [['week', 'Thời khóa biểu'], ['courses', 'Đăng ký lớp'], ['study', 'Lớp của tôi'], ['tuition', 'Học phí']]],
+  TEACHER: ['Giảng viên', [['week', 'Thời khóa biểu'], ['teach', 'Lớp giảng dạy']]],
+  TRAINING_STAFF: ['Đào tạo', [['week', 'Thời khóa biểu'], ['catalog', 'Danh mục đào tạo']]],
+  ACCOUNTANT: ['Kế toán', [['payment', 'Ghi nhận học phí']]],
+  ADMIN: ['Quản trị viên', [['admin', 'Tạo tài khoản']]],
+};
+const scopes = { STUDENT: 'student', TEACHER: 'teacher', TRAINING_STAFF: 'training' };
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -11,11 +23,21 @@ export default function App() {
   const [loggingOut, setLoggingOut] = useState(false);
   const [invoiceId, setInvoiceId] = useState('');
   const [error, setError] = useState('');
+  const [selectedRole, setSelectedRole] = useState('');
+  const [selectedPage, setSelectedPage] = useState('');
+  const [dark, setDark] = useState(() => localStorage.getItem('ec-theme') === 'dark');
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    localStorage.setItem('ec-theme', dark ? 'dark' : 'light');
+  }, [dark]);
 
   const onError = useCallback(failure => {
     if (failure?.status === 401) {
       setUser(null);
       setInvoiceId('');
+      setSelectedRole('');
+      setSelectedPage('');
     }
     setError(failure?.message ?? '');
   }, []);
@@ -34,6 +56,8 @@ export default function App() {
       await api.logout();
       setUser(null);
       setInvoiceId('');
+      setSelectedRole('');
+      setSelectedPage('');
       setError('');
     } catch (failure) {
       onError(failure);
@@ -42,28 +66,55 @@ export default function App() {
     }
   }
 
-  const student = user?.roles.includes('STUDENT');
-  const teacher = user?.roles.includes('TEACHER');
-  const accountant = user?.roles.includes('ACCOUNTANT');
+  const roles = user?.roles.filter(role => menus[role]) ?? [];
+  const role = roles.includes(selectedRole) ? selectedRole : roles[0];
+  const links = menus[role]?.[1] ?? [];
+  const page = links.some(([key]) => key === selectedPage) ? selectedPage : links[0]?.[0];
+
   return <>
     <header><div className="header-inner">
       <strong>English Center</strong>
-      {user && <div className="session"><span>{user.username}</span>
-        <button className="secondary" onClick={logout} disabled={loggingOut}>Đăng xuất</button>
-      </div>}
+      <div className="session">
+        <button className="secondary" onClick={() => setDark(!dark)}>{dark ? 'Chế độ sáng' : 'Chế độ tối'}</button>
+        {user && <>
+          <details className="notifications">
+            <summary aria-label="Thông báo">🔔 <span className="bell-label">Thông báo</span></summary>
+            <p>Chưa có thông báo.</p>
+          </details>
+          <span>{user.username}</span>
+          <button className="secondary" onClick={logout} disabled={loggingOut}>Đăng xuất</button>
+        </>}
+      </div>
     </div></header>
-    <main>
-      {error && <p className="notice" role="alert">{error}</p>}
-      {loading && <p role="status">Đang kiểm tra phiên đăng nhập…</p>}
-      {!loading && !user && <LoginPage onLogin={session => { setError(''); setUser(session); }} />}
-      {student && <>
-        <CoursesPage onInvoice={setInvoiceId} onError={onError} />
-        <TuitionPage invoiceId={invoiceId} onInvoice={setInvoiceId} onError={onError} />
-      </>}
-      {student && <AcademicsPage key="student" onError={onError} />}
-      {teacher && <AcademicsPage key="teacher" teacher onError={onError} />}
-      {accountant && <PaymentForm onError={onError} />}
-      {user && !student && !accountant && !teacher && <p>Vai trò của bạn chưa có màn hình trong cổng này.</p>}
-    </main>
+    <div className={user ? 'portal' : ''}>
+      {user && <aside className="sidebar">
+        {roles.length > 1 ? <label>Vai trò<select value={role} onChange={event => {
+          setSelectedRole(event.target.value);
+          setSelectedPage('');
+          setError('');
+        }}>
+          {roles.map(value => <option key={value} value={value}>{menus[value][0]}</option>)}
+        </select></label> : <strong>{menus[role]?.[0]}</strong>}
+        <nav aria-label="Chức năng">{links.map(([key, label]) =>
+          <button key={key} aria-current={page === key ? 'page' : undefined} onClick={() => {
+            setSelectedPage(key);
+            setError('');
+          }}>{label}</button>)}</nav>
+      </aside>}
+      <main>
+        {error && <p className="notice" role="alert">{error}</p>}
+        {loading && <p role="status">Đang kiểm tra phiên đăng nhập…</p>}
+        {!loading && !user && <LoginPage onLogin={session => { setError(''); setUser(session); }} />}
+        {page === 'week' && <WeekPage key={role} scope={scopes[role]} onError={onError} />}
+        {page === 'courses' && <CoursesPage onInvoice={id => { setInvoiceId(id); setSelectedPage('tuition'); }} onError={onError} />}
+        {page === 'tuition' && <TuitionPage invoiceId={invoiceId} onInvoice={setInvoiceId} onError={onError} />}
+        {page === 'study' && <AcademicsPage key="student" onError={onError} />}
+        {page === 'teach' && <AcademicsPage key="teacher" teacher onError={onError} />}
+        {page === 'payment' && <PaymentForm onError={onError} />}
+        {page === 'admin' && <AdminPage onError={onError} />}
+        {page === 'catalog' && <TrainingPage onError={onError} />}
+        {user && !role && <p>Tài khoản chưa được cấp vai trò.</p>}
+      </main>
+    </div>
   </>;
 }
