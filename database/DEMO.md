@@ -21,9 +21,9 @@ $env:BACKEND_URL = 'http://127.0.0.1:8085'
 npm run dev -- --host 127.0.0.1 --port 5175 --strictPort
 ```
 
-Mở http://127.0.0.1:5175/. Đăng nhập bằng `demo.student` và mật khẩu demo đã chọn. Chọn khóa học, học phần và đăng ký lớp. Sao chép mã hóa đơn rồi đăng nhập bằng `demo.accountant` để ghi nhận khoản thu mẫu. Đăng nhập lại bằng học viên và tra cứu hóa đơn để xem công nợ.
+Mở http://127.0.0.1:5175/. Đăng nhập bằng `demo.student`, chọn khóa học, chọn lớp và bấm **Tạo mã QR payOS**. Học phần hiển thị theo lớp. Chỗ trống được kiểm tra lại khi payOS xác nhận tiền về.
 
-Bài test tích hợp cần schema demo vừa nạp seed. Đặt biến môi trường `DEMO_PASSWORD` bằng mật khẩu demo đã chọn rồi chạy `node database/demo-smoke.mjs` từ thư mục gốc. Bài test tạo đăng ký và giao dịch mẫu để kiểm tra tranh chỗ cuối, quyền xem hóa đơn, gửi đồng thời cùng mã tham chiếu và công nợ về 0. Dùng schema demo mới nếu cần chạy lại từ đầu.
+Bài test tích hợp cần dữ liệu demo và lớp `demo-last-seat` còn đúng một chỗ. Trong terminal chạy Spring Boot, đặt `PAYOS_DEMO=true` và `PAYOS_CHECKSUM_KEY` bằng một khóa giả chỉ dùng cục bộ. Trong terminal test, đặt cùng `PAYOS_CHECKSUM_KEY` và `DEMO_PASSWORD`, rồi chạy `node database/demo-smoke.mjs`. Bài test gửi webhook có chữ ký qua web demo và tạo dữ liệu học phí, nên dùng schema demo mới nếu cần chạy lại từ đầu.
 
 Với schema cũ, chạy `06-academics.sql` đúng một lần trước khi khởi động bản mới. Hóa đơn cũ được cấp mã ngắn tự động. Có thể tra cứu và thu học phí bằng mã dạng HD1 hoặc UUID cũ.
 
@@ -39,4 +39,10 @@ Chạy 10-booking-staff-exam-invigilators.sql một lần sau các migration tr�
 
 Học phí trong demo-catalog.sql là số liệu minh họa, theo từng học phần. Giá giao tiếp và IELTS tham khảo bảng giá của [Langmaster](https://langmaster.edu.vn/hoc-phi-1-khoa-hoc-tieng-anh-giao-tiep-bao-nhieu-tien). Giá TOEIC tham khảo [ZIM](https://zim.vn/toeic). Mức nền tảng A1 là giả định cho bản demo.
 
-Chạy 11-seat-holds-attendance-alerts.sql một lần trước khi dùng bản mới. Học viên có thể giữ một chỗ trong 15 phút trước khi xác nhận đăng ký. Chuông gửi một cảnh báo mỗi đăng ký khi có ít nhất ba buổi đã đến ngày học bị đánh dấu vắng không phép. Quản trị viên dùng Quản lý khóa học để tạo khóa, học phần và lớp.
+Chạy 11-seat-holds-attendance-alerts.sql một lần trước khi dùng bản mới. Chuông gửi một cảnh báo mỗi đăng ký khi có ít nhất ba buổi đã đến ngày học bị đánh dấu vắng không phép. Quản trị viên dùng Quản lý khóa học để tạo khóa, học phần và lớp.
+
+## Thanh toán QR payOS
+
+Chạy migration `12-payos.sql` một lần sau `11-seat-holds-attendance-alerts.sql`. Migration xóa dữ liệu giữ chỗ cũ và thêm bảng đơn, biên nhận payOS.
+
+Để dùng payOS thật, cấu hình `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY` và `PAYOS_RETURN_URL` trong môi trường backend. Đăng ký webhook HTTPS công khai tại đường dẫn `/api/payments/payos/webhook`. Trang quay về chỉ hiển thị trạng thái từ backend. Đơn được ghi danh sau khi webhook hợp lệ báo đúng số tiền. Nếu thiếu tiền hoặc lớp đã đầy, kế toán xem giao dịch trong **Giao dịch payOS cần đối soát** và xử lý khoản chuyển thủ công.

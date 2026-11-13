@@ -19,6 +19,7 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/payments/payos/webhook"));
         http.authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers(HttpMethod.GET, "/", "/index.html", "/favicon.ico",
@@ -26,6 +27,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/users/students").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/users/employees").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/payments/payos/webhook").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/payments/payos/reviews").hasRole("ACCOUNTANT")
                 .requestMatchers("/api/enrollments", "/api/enrollments/**").hasRole("STUDENT")
                 .requestMatchers(HttpMethod.POST, "/api/invoices/*/payments").hasRole("ACCOUNTANT")
                 .requestMatchers(HttpMethod.GET, "/api/invoices", "/api/invoices/**").hasRole("STUDENT")

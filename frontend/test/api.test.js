@@ -19,7 +19,7 @@ function mockApi(t, steps) {
 
 const csrf = token => ({ path: '/auth/csrf', body: { headerName: 'X-CSRF-TOKEN', token } });
 
-test('student logs in and follows the catalog to the invoice', async t => {
+test('student logs in and opens checkout and reads the paid invoice', async t => {
   mockApi(t, [
     csrf('before-login'),
     { path: '/auth/login', method: 'POST', status: 204, check: options => {
@@ -33,18 +33,21 @@ test('student logs in and follows the catalog to the invoice', async t => {
     { path: '/catalog/courses/course/modules', body: [{ id: 'module' }] },
     { path: '/catalog/modules/module/classes', body: [{ id: 'class', remainingSeats: 1 }] },
     csrf('after-login'),
-    { path: '/enrollments', method: 'POST', body: { invoiceId: 'invoice' }, check: options => {
+    { path: '/enrollments/checkout', method: 'POST', body: { orderCode: 123, status: 'PENDING' }, check: options => {
       assert.equal(options.headers['X-CSRF-TOKEN'], 'after-login');
       assert.deepEqual(JSON.parse(options.body), { classId: 'class' });
     } },
-    { path: '/invoices/invoice', body: { remainingAmount: 200000 } },
+    { path: '/enrollments/checkout/123', body: { status: 'ENROLLED', invoiceId: 'invoice' } },
+    { path: '/invoices/invoice', body: { remainingAmount: 0 } },
   ]);
   assert.deepEqual((await api.login('student', 'demo')).roles, ['STUDENT']);
   const [course] = await api.courses();
   const [module] = await api.modules(course.id);
   const [classroom] = await api.classes(module.id);
-  const registration = await api.enroll(classroom.id);
-  assert.equal((await api.invoice(registration.invoiceId)).remainingAmount, 200000);
+  const order = await api.openCheckout(classroom.id);
+  assert.equal(order.status, "PENDING");
+  const registration = await api.checkoutStatus(order.orderCode);
+  assert.equal((await api.invoice(registration.invoiceId)).remainingAmount, 0);
 });
 
 test('accountant submits payment with the same reference on retry', async t => {

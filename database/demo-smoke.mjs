@@ -1,3 +1,4 @@
+import { createHmac, randomUUID } from 'node:crypto';
 import assert from 'node:assert/strict';
 
 const base = process.env.DEMO_URL ?? 'http://127.0.0.1:5175';
@@ -53,38 +54,67 @@ await Promise.all([
   otherStudent.login('demo.student2', 'STUDENT'),
   accountant.login('demo.accountant', 'ACCOUNTANT'),
 ]);
+const courseId = process.env.DEMO_COURSE_ID ?? 'demo-course';
+const moduleId = process.env.DEMO_MODULE_ID ?? 'demo-module';
+const classId = process.env.DEMO_CLASS_ID ?? 'demo-last-seat';
+const classPath = '/catalog/modules/' + moduleId + '/classes';
 const courses = ok(await student.request('/catalog/courses'));
-assert.ok(courses.some(course => course.id === 'demo-course'));
-const modules = ok(await student.request('/catalog/courses/demo-course/modules'));
-assert.ok(modules.some(module => module.id === 'demo-module'));
-const classes = ok(await student.request('/catalog/modules/demo-module/classes'));
-const lastSeat = classes.find(classroom => classroom.id === 'demo-last-seat');
+assert.ok(courses.some(course => course.id === courseId));
+const modules = ok(await student.request('/catalog/courses/' + courseId + '/modules'));
+assert.ok(modules.some(module => module.id === moduleId));
+const classes = ok(await student.request(classPath));
+const lastSeat = classes.find(classroom => classroom.id === classId);
 assert.equal(lastSeat.remainingSeats, 1, 'Run this smoke test on a fresh demo seed');
 assert.equal(lastSeat.lessons[0].roomName, 'Phong 101');
 
-const results = await Promise.all([student, otherStudent].map(client =>
-  client.post('/enrollments', { classId: lastSeat.id })));
-assert.deepEqual(results.map(result => result.status).sort(), [200, 409], JSON.stringify(results));
-const winnerIndex = results.findIndex(result => result.status === 200);
-const winner = [student, otherStudent][winnerIndex];
-const loser = [otherStudent, student][winnerIndex];
-const registration = results[winnerIndex].body;
-assert.deepEqual(ok(await winner.post('/enrollments', { classId: lastSeat.id })), registration);
-const invoicePath = '/invoices/' + registration.invoiceId;
-assert.equal((await loser.request(invoicePath)).status, 404);
-assert.equal(ok(await winner.request(invoicePath)).remainingAmount, 1000000);
+const secret = process.env.PAYOS_CHECKSUM_KEY;
+assert.ok(secret, 'Set PAYOS_CHECKSUM_KEY to the local webhook secret');
+async function webhook(order, amount, reference, valid = true) {
+  const data = {
+    orderCode: order.orderCode, amount, reference, code: '00',
+    currency: 'VND', paymentLinkId: 'demo-' + order.orderCode,
+  };
+  const fields = Object.keys(data).sort().map(key => key + '=' + data[key]).join('&');
+  const signature = createHmac('sha256', secret).update(fields).digest('hex');
+  return fetch(base + '/api/payments/payos/webhook', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: '00', success: true, data, signature: valid ? signature : '0'.repeat(64) }),
+  });
+}
 
-const payment = { amount: '400000.00', method: 'CASH', referenceCode: 'DEMO-SMOKE-01' };
-assert.equal((await winner.post(invoicePath + '/payments', payment)).status, 403);
-const paymentToken = await accountant.request('/auth/csrf');
-const receipts = await Promise.all([1, 2].map(() =>
-  accountant.post(invoicePath + '/payments', payment, false, paymentToken)));
-assert.equal(ok(receipts[0]).id, ok(receipts[1]).id);
-assert.equal(ok(await winner.request(invoicePath)).remainingAmount, 600000);
-ok(await accountant.post(invoicePath + '/payments', {
-  ...payment, amount: '600000.00', referenceCode: 'DEMO-SMOKE-02',
-}));
-const paid = ok(await winner.request(invoicePath));
+const clients = [student, otherStudent];
+const orders = await Promise.all(clients.map(async client =>
+  ok(await client.post('/enrollments/checkout', { classId: lastSeat.id }))));
+const [first, second] = orders;
+assert.ok(orders.every(order => order.status === 'PENDING' && !order.invoiceId));
+assert.equal(ok(await student.request(classPath))
+  .find(item => item.id === lastSeat.id).remainingSeats, 1);
+assert.equal((await otherStudent.request('/enrollments/checkout/' + first.orderCode)).status, 404);
+const short = ok(await student.post('/enrollments/checkout', { classId: lastSeat.id }));
+assert.equal((await webhook(short, short.amount - 1, randomUUID())).status, 200);
+assert.equal(ok(await student.request('/enrollments/checkout/' + short.orderCode)).status, 'REVIEW');
+assert.equal((await webhook(first, first.amount, randomUUID(), false)).status, 401);
+assert.equal(ok(await student.request('/enrollments/checkout/' + first.orderCode)).status, 'PENDING');
+
+const references = orders.map(() => randomUUID());
+const responses = await Promise.all(orders.map((order, index) => webhook(order, order.amount, references[index])));
+for (const response of responses) assert.equal(response.status, 200, await response.text());
+const results = await Promise.all(clients.map(async (client, index) =>
+  ok(await client.request('/enrollments/checkout/' + orders[index].orderCode))));
+assert.deepEqual(results.map(result => result.status).sort(), ['ENROLLED', 'REVIEW']);
+const winnerIndex = results.findIndex(result => result.status === 'ENROLLED');
+const loserIndex = 1 - winnerIndex;
+const invoicePath = '/invoices/' + results[winnerIndex].invoiceId;
+assert.equal((await clients[loserIndex].request(invoicePath)).status, 404);
+const paid = ok(await clients[winnerIndex].request(invoicePath));
 assert.equal(paid.status, 'PAID');
 assert.equal(paid.remainingAmount, 0);
-console.log('Passed: login, catalog, last-seat concurrency, invoice ownership, payment authorization, retry and paid balance');
+assert.equal(results[loserIndex].invoiceId, null);
+assert.equal((await webhook(orders[winnerIndex], orders[winnerIndex].amount, references[winnerIndex])).status, 200);
+assert.equal((await webhook(orders[loserIndex], orders[loserIndex].amount, references[loserIndex])).status, 200);
+assert.equal((await student.request('/payments/payos/reviews')).status, 403);
+const reviews = ok(await accountant.request('/payments/payos/reviews'));
+assert.equal(reviews.filter(item => item.reference === references[loserIndex]).length, 1);
+assert.equal(reviews.find(item => item.reference === references[loserIndex]).reason, 'Lớp đã hết chỗ.');
+assert.ok(reviews.some(item => item.orderCode === short.orderCode));
+console.log('Passed: login, course catalog, no hold, checkout ownership, invalid signature, short payment, concurrent last seat, duplicate webhook and accountant review');

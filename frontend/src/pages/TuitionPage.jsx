@@ -49,6 +49,21 @@ export default function TuitionPage({ invoiceId, onInvoice, onError }) {
 }
 
 export function PaymentForm({ onError }) {
+  const [reviews, setReviews] = useState([]);
+  const [reviewLoading, setReviewLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    function refresh() {
+      api.paymentReviews().then(items => { if (active) setReviews(items); })
+        .catch(error => { if (active) onError(error); })
+        .finally(() => { if (active) setReviewLoading(false); });
+    }
+    refresh();
+    const timer = setInterval(refresh, 10000);
+    return () => { active = false; clearInterval(timer); };
+  }, [onError]);
+
   const [busy, setBusy] = useState(false);
   const [receipt, setReceipt] = useState(null);
 
@@ -76,6 +91,14 @@ export function PaymentForm({ onError }) {
 
   return <section className="panel">
     <h2>Ghi nhận học phí</h2>
+    <h3>Giao dịch payOS cần đối soát</h3>
+    {reviewLoading && <p>Đang tải giao dịch…</p>}
+    {!reviewLoading && reviews.length === 0 && <p>Chưa có giao dịch cần đối soát.</p>}
+    <ul>{reviews.map(item => <li key={item.reference}>
+      Đơn {item.orderCode} · Lớp {item.classCode} · Học viên {item.studentId} ·
+      Nhận {money(item.receivedAmount)} / {money(item.expectedAmount)} ·
+      Mã giao dịch {item.reference} · {item.reason}
+    </li>)}</ul>
     <form onSubmit={submit}>
       <fieldset disabled={busy}>
         <label>Mã hóa đơn<input name="invoiceId" required maxLength={36} /></label>
