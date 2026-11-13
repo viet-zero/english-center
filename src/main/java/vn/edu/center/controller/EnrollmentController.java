@@ -18,6 +18,11 @@ public class EnrollmentController {
         this.currentUser = currentUser;
     }
 
+    @PostMapping("/holds")
+    public java.util.Map<String, String> hold(Principal principal, @Valid @RequestBody EnrollmentRequest request) {
+        return java.util.Map.of("expiresAt", enrollments.hold(currentUser.studentId(principal), request.classId()));
+    }
+
     @PostMapping
     public EnrollmentService.RegistrationResult register(
             Principal principal, @Valid @RequestBody EnrollmentRequest request) {

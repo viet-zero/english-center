@@ -38,3 +38,5 @@ Chạy 09-notifications.sql một lần trước khi sử dụng chuông thông 
 Chạy 10-booking-staff-exam-invigilators.sql một lần sau các migration trước. Migration chuyển giám thị cũ sang bảng phân công nhiều người. Các buổi xếp trước khi có tính năng này chưa có mã người xếp. Có thể chạy demo-catalog.sql sau demo-seed.sql để tạo bốn khóa và lớp mẫu.
 
 Học phí trong demo-catalog.sql là số liệu minh họa, theo từng học phần. Giá giao tiếp và IELTS tham khảo bảng giá của [Langmaster](https://langmaster.edu.vn/hoc-phi-1-khoa-hoc-tieng-anh-giao-tiep-bao-nhieu-tien). Giá TOEIC tham khảo [ZIM](https://zim.vn/toeic). Mức nền tảng A1 là giả định cho bản demo.
+
+Chạy 11-seat-holds-attendance-alerts.sql một lần trước khi dùng bản mới. Học viên có thể giữ một chỗ trong 15 phút trước khi xác nhận đăng ký. Chuông gửi một cảnh báo mỗi đăng ký khi có ít nhất ba buổi đã đến ngày học bị đánh dấu vắng không phép. Quản trị viên dùng Quản lý khóa học để tạo khóa, học phần và lớp.

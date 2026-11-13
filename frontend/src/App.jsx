@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import NotificationBell from './components/NotificationBell.jsx';
 import AcademicsPage from './pages/AcademicsPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
+import CatalogAdmin from './pages/CatalogAdmin.jsx';
 import CoursesPage from './pages/CoursesPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import ExamManagementPage from './pages/ExamManagementPage.jsx';
@@ -16,7 +17,7 @@ const menus = {
   TEACHER: ['Giảng viên', [['week', 'Thời khóa biểu'], ['teach', 'Lớp giảng dạy']]],
   TRAINING_STAFF: ['Đào tạo', [['week', 'Thời khóa biểu'], ['catalog', 'Danh mục đào tạo'], ['rooms', 'Xếp phòng'], ['exams', 'Lịch thi']]],
   ACCOUNTANT: ['Kế toán', [['payment', 'Ghi nhận học phí']]],
-  ADMIN: ['Quản trị viên', [['admin', 'Tạo tài khoản']]],
+  ADMIN: ['Quản trị viên', [['admin', 'Tạo tài khoản'], ['admin-catalog', 'Quản lý khóa học']]],
 };
 const scopes = { STUDENT: 'student', TEACHER: 'teacher', TRAINING_STAFF: 'training' };
 
@@ -111,6 +112,7 @@ export default function App() {
         {page === 'study' && <AcademicsPage key="student" onError={onError} />}
         {page === 'teach' && <AcademicsPage key="teacher" teacher onError={onError} />}
         {page === 'payment' && <PaymentForm onError={onError} />}
+        {page === 'admin-catalog' && <CatalogAdmin onError={onError} />}
         {page === 'admin' && <AdminPage onError={onError} />}
         {page === 'exams' && <ExamManagementPage onError={onError} />}
         {page === 'rooms' && <RoomSchedulingPage onError={onError} />}

@@ -101,6 +101,7 @@ public class AcademicService {
                 INSERT INTO diem_danh (lesson_id,enrollment_id,attendance_status) VALUES (?,?,?)
                 ON DUPLICATE KEY UPDATE attendance_status = ?
                 """, lessonId, enrollmentId, status, status);
+        warnIfAbsent(enrollmentId);
     }
 
     @Transactional
@@ -230,6 +231,26 @@ public class AcademicService {
                 INSERT INTO diem_danh (lesson_id,enrollment_id,attendance_status) VALUES (?,?,?)
                 ON DUPLICATE KEY UPDATE attendance_status = ?
                 """, roster.stream().map(id -> new Object[] {lessonId, id, statuses.get(id), statuses.get(id)}).toList());
+        roster.forEach(this::warnIfAbsent);
+    }
+
+    private void warnIfAbsent(String enrollmentId) {
+        Long absences = sql.queryForObject("""
+                SELECT COUNT(*) FROM diem_danh a JOIN lich_hoc l ON l.id = a.lesson_id
+                WHERE a.enrollment_id = ? AND a.attendance_status = 'ABSENT'
+                  AND l.status <> 'CANCELLED' AND l.lesson_date <= CURRENT_DATE
+                """, Long.class, enrollmentId);
+        if (absences >= 3 && sql.queryForList(
+                "SELECT enrollment_id FROM canh_bao_chuyen_can WHERE enrollment_id = ?",
+                String.class, enrollmentId).isEmpty()) {
+            sql.update("INSERT INTO canh_bao_chuyen_can (enrollment_id) VALUES (?)", enrollmentId);
+            var enrollment = sql.queryForMap("""
+                    SELECT e.student_id, c.class_code FROM dang_ky_hoc_phan e
+                    JOIN lop_hoc c ON c.id = e.class_id WHERE e.id = ?
+                    """, enrollmentId);
+            notifications.notifyStudent((String) enrollment.get("student_id"),
+                    "Cảnh báo chuyên cần: Bạn đã vắng không phép 3 buổi ở lớp " + enrollment.get("class_code") + ".");
+        }
     }
 
     private void requireLesson(String classId, String lessonId) {

@@ -8,6 +8,7 @@ export default function CoursesPage({ onInvoice, onError }) {
   const [classes, setClasses] = useState([]);
   const [courseId, setCourseId] = useState('');
   const [moduleId, setModuleId] = useState('');
+  const [hold, setHold] = useState(null);
   const [busy, setBusy] = useState(true);
 
   useEffect(() => {
@@ -77,7 +78,15 @@ export default function CoursesPage({ onInvoice, onError }) {
           {lesson.date}, {lesson.startTime.slice(0, 5)}–{lesson.endTime.slice(0, 5)} · {lesson.roomName}
         </li>)}
       </ul></details> : <p>Chưa có lịch học.</p>}
-      <button disabled={busy || item.remainingSeats <= 0} onClick={() => register(item.id)}>Đăng ký lớp</button>
+      {hold?.classId === item.id && <p role="status">Giữ chỗ đến {hold.expiresAt.replace('T', ' ')}</p>}
+      <button type="button" className="outline" disabled={busy || (item.remainingSeats <= 0 && hold?.classId !== item.id)}
+        onClick={() => load(async () => {
+          const result = await api.holdSeat(item.id);
+          setHold({ classId: item.id, expiresAt: result.expiresAt });
+          setClasses(await api.classes(moduleId));
+        })}>Giữ chỗ 15 phút</button>
+      <button disabled={busy || (item.remainingSeats <= 0 && hold?.classId !== item.id)}
+        onClick={() => register(item.id)}>Đăng ký lớp</button>
     </article>)}</div>
   </section>;
 }

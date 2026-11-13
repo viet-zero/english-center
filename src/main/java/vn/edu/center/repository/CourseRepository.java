@@ -16,7 +16,7 @@ public interface CourseRepository extends JpaRepository<Course, String> {
     @Query(value = """
             SELECT c.id, c.class_code AS classCode, u.full_name AS teacherName,
                    c.start_date AS startDate, c.end_date AS endDate, m.tuition,
-                   c.max_students - COUNT(e.id) AS remainingSeats
+                   c.max_students - COUNT(e.id) - (SELECT COUNT(*) FROM giu_cho h WHERE h.class_id = c.id AND h.expires_at > CURRENT_TIMESTAMP) AS remainingSeats
             FROM lop_hoc c
             JOIN hoc_phan m ON m.id = c.module_id
             JOIN khoa_hoc k ON k.id = m.course_id
