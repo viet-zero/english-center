@@ -16,7 +16,7 @@ import vn.edu.center.service.CurrentUserService;
 @RequestMapping("/api")
 public class TimetableController {
     private static final String WEEK = """
-            SELECT e.id, e.kind, e.day, e.start_time, e.end_time, e.room, e.title,
+            SELECT e.id, e.class_id, e.kind, e.day, e.start_time, e.end_time, e.room, e.title,
                    c.class_code, k.name AS course
             FROM (
                 SELECT l.id, 'LESSON' AS kind, CAST(l.lesson_date AS CHAR) AS day,

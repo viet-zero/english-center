@@ -47,6 +47,9 @@ export const api = {
   academicClasses: scope => request('/academics/' + scope + '/classes'),
   academicClass: (scope, classId) => request('/academics/' + scope + '/classes/' + id(classId)),
   createExam: (classId, exam) => json('/academics/teacher/classes/' + id(classId) + '/exams', exam),
+  attendanceRoster: (classId, lessonId) => request('/academics/teacher/classes/' + id(classId) + '/lessons/' + id(lessonId) + '/attendance'),
+  saveAttendance: (classId, lessonId, statuses) => json(
+    '/academics/teacher/classes/' + id(classId) + '/lessons/' + id(lessonId) + '/attendance', { statuses }, 'PUT'),
   attendance: (classId, lessonId, enrollmentId, status) => json(
     '/academics/teacher/classes/' + id(classId) + '/lessons/' + id(lessonId) + '/attendance/' + id(enrollmentId),
     { status }, 'PUT'),

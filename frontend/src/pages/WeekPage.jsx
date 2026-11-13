@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import LessonAttendance from './LessonAttendance.jsx';
 import { api } from '../services/api.js';
 
 const days = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
@@ -29,6 +30,7 @@ function eventColor(event) {
 }
 
 export default function WeekPage({ scope, onError }) {
+  const [lesson, setLesson] = useState(null);
   const [week, setWeek] = useState(monday);
   const [events, setEvents] = useState(null);
   const start = dateKey(week);
@@ -44,6 +46,7 @@ export default function WeekPage({ scope, onError }) {
 
   function change(next) {
     if (dateKey(next) === start) return;
+    setLesson(null);
     setEvents(null);
     onError(null);
     setWeek(next);
@@ -74,6 +77,7 @@ export default function WeekPage({ scope, onError }) {
                 <strong>{event.class_code}</strong>
                 {event.title && <span>{event.title}</span>}
                 <span>{event.room} · {event.start_time}–{event.end_time}</span>
+                {scope === 'teacher' && event.kind === 'LESSON' && <button type="button" className="outline" onClick={() => { onError(null); setLesson(event); }}>Điểm danh</button>}
               </div>)}
           </td>)}
         </tr>)}</tbody>
@@ -81,5 +85,6 @@ export default function WeekPage({ scope, onError }) {
     </div>
     <div className="legend">{[['ielts', 'IELTS'], ['toeic', 'TOEIC'], ['conversation', 'Giao tiếp / khóa khác'], ['exam', 'Lịch thi']]
       .map(([color, label]) => <span className={'schedule-item ' + color} key={color}>{label}</span>)}</div>
+    {lesson && <LessonAttendance key={lesson.id} lesson={lesson} onError={onError} onClose={() => setLesson(null)} />}
   </section>;
 }

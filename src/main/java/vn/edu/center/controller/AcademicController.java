@@ -98,6 +98,24 @@ public class AcademicController {
 
     public record ExamRequest(@NotBlank @Size(max = 150) String title, @NotNull LocalDateTime startsAt,
             @NotNull LocalDateTime endsAt, @NotBlank @Size(max = 100) String room) {}
+    @GetMapping("/teacher/classes/{classId}/lessons/{lessonId}/attendance")
+    public List<Map<String, Object>> attendanceRoster(Principal principal,
+            @PathVariable String classId, @PathVariable String lessonId) {
+        return academics.attendanceRoster(currentUser.employeeId(principal), classId, lessonId);
+    }
+
+    @PutMapping("/teacher/classes/{classId}/lessons/{lessonId}/attendance")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void saveAttendance(Principal principal, @PathVariable String classId,
+            @PathVariable String lessonId, @Valid @RequestBody BatchAttendance body) {
+        Map<String, String> statuses = new java.util.LinkedHashMap<>();
+        body.statuses().forEach((id, status) -> statuses.put(id, status.name()));
+        academics.saveAttendance(currentUser.employeeId(principal), classId, lessonId, statuses);
+    }
+
+    public record BatchAttendance(
+            @NotEmpty Map<@NotBlank @Size(max = 36) String, @NotNull AttendanceStatus> statuses) {}
+
     public record AttendanceRequest(@NotNull AttendanceStatus status) {}
     public enum AttendanceStatus { PRESENT, ABSENT, LATE, EXCUSED }
     public record GradeRequest(@NotNull @DecimalMin("0") @DecimalMax("10")

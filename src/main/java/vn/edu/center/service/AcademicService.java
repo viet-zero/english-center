@@ -189,6 +189,47 @@ public class AcademicService {
                 """, classId);
     }
 
+    public List<Map<String, Object>> attendanceRoster(String teacher, String classId, String lessonId) {
+        requireTeacher(teacher, classId, false);
+        requireLesson(classId, lessonId);
+        return sql.queryForList("""
+                SELECT e.id, u.full_name, s.student_code, a.attendance_status
+                FROM dang_ky_hoc_phan e
+                JOIN hoc_vien s ON s.id = e.student_id
+                JOIN nguoi_dung u ON u.id = s.user_id
+                LEFT JOIN diem_danh a ON a.enrollment_id = e.id AND a.lesson_id = ?
+                WHERE e.class_id = ? AND e.status IN ('CONFIRMED','COMPLETED')
+                ORDER BY u.full_name, e.id
+                """, lessonId, classId);
+    }
+
+    @Transactional
+    public void saveAttendance(String teacher, String classId, String lessonId, Map<String, String> statuses) {
+        requireTeacher(teacher, classId, true);
+        requireLesson(classId, lessonId);
+        var roster = sql.queryForList("""
+                SELECT id FROM dang_ky_hoc_phan
+                WHERE class_id = ? AND status IN ('CONFIRMED','COMPLETED') FOR UPDATE
+                """, String.class, classId);
+        if (!roster.containsAll(statuses.keySet())) {
+            throw forbidden();
+        }
+        if (roster.size() != statuses.size()) {
+            throw new IllegalStateException("Class roster changed. Reopen attendance and try again.");
+        }
+        sql.batchUpdate("""
+                INSERT INTO diem_danh (lesson_id,enrollment_id,attendance_status) VALUES (?,?,?)
+                ON DUPLICATE KEY UPDATE attendance_status = ?
+                """, roster.stream().map(id -> new Object[] {lessonId, id, statuses.get(id), statuses.get(id)}).toList());
+    }
+
+    private void requireLesson(String classId, String lessonId) {
+        if (sql.queryForList("SELECT id FROM lich_hoc WHERE id = ? AND class_id = ? AND status <> 'CANCELLED'",
+                String.class, lessonId, classId).isEmpty()) {
+            throw forbidden();
+        }
+    }
+
     private void requireTeacher(String teacher, String classId, boolean lock) {
         String query = "SELECT id FROM lop_hoc WHERE id = ? AND teacher_id = ?";
         if (sql.queryForList(lock ? query + " FOR UPDATE" : query, String.class, classId, teacher).isEmpty()) {
