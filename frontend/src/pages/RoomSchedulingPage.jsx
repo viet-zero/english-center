@@ -12,6 +12,8 @@ export default function RoomSchedulingPage({ onError }) {
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [revision, setRevision] = useState(0);
   const [saved, setSaved] = useState(false);
+  const [liveNotice, setLiveNotice] = useState('');
+  const [connected, setConnected] = useState(false);
   const classroom = classes.find(item => item.id === classId);
 
   useEffect(() => {
@@ -31,7 +33,49 @@ export default function RoomSchedulingPage({ onError }) {
     return () => { active = false; };
   }, [day, shift, revision, onError]);
 
+  useEffect(() => {
+    if (!day) return;
+    let socket;
+    let timer;
+    let active = true;
+
+    function connect() {
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      socket = new WebSocket(protocol + '//' + location.host + '/api/training/room-updates');
+      socket.onopen = () => {
+        if (!active) return;
+        setConnected(true);
+        setRevision(value => value + 1);
+      };
+      socket.onmessage = event => {
+        if (active && event.data === day) setRevision(value => value + 1);
+      };
+      socket.onclose = () => {
+        if (!active) return;
+        setConnected(false);
+        timer = setTimeout(connect, 3000);
+      };
+    }
+
+    connect();
+    return () => {
+      active = false;
+      setConnected(false);
+      clearTimeout(timer);
+      socket?.close();
+    };
+  }, [day]);
+
+  useEffect(() => {
+    if (!roomId || busy || loadingRooms) return;
+    if (rooms.some(room => room.id === roomId && room.occupied)) {
+      setRoomId('');
+      setLiveNotice('Phòng vừa được xếp. Vui lòng chọn phòng khác.');
+    }
+  }, [rooms, roomId, busy, loadingRooms]);
+
   function changeSlot(update, value) {
+    setLiveNotice('');
     update(value);
     setRooms([]);
     setRoomId('');
@@ -41,6 +85,7 @@ export default function RoomSchedulingPage({ onError }) {
 
   async function save(event) {
     event.preventDefault();
+    setLiveNotice('');
     setBusy(true);
     setSaved(false);
     onError(null);
@@ -59,6 +104,8 @@ export default function RoomSchedulingPage({ onError }) {
 
   return <section className="panel">
     <h1>Xếp phòng học</h1>
+    {day && <p>{connected ? 'Đang cập nhật phòng trực tiếp' : 'Đang kết nối cập nhật phòng…'}</p>}
+    {liveNotice && <p role="alert" className="notice">{liveNotice}</p>}
     <form onSubmit={save}>
       <fieldset disabled={busy}>
         <div className="fields">
@@ -90,7 +137,7 @@ export default function RoomSchedulingPage({ onError }) {
                 : room.occupied ? 'Đã có lịch' : '';
             return <label className="check" key={room.id}>
               <input type="radio" name="room" checked={roomId === room.id}
-                disabled={Boolean(reason)} onChange={() => { setRoomId(room.id); setSaved(false); }} />
+                disabled={Boolean(reason)} onChange={() => { setRoomId(room.id); setSaved(false); setLiveNotice(''); }} />
               {room.name} · {room.capacity} chỗ · {reason || 'Trống'}
             </label>;
           })}

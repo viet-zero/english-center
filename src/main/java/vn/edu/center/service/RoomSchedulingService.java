@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
+import vn.edu.center.config.RoomUpdates.BookingSaved;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -23,8 +25,11 @@ public class RoomSchedulingService {
 
     private final JdbcTemplate sql;
 
-    public RoomSchedulingService(JdbcTemplate sql) {
+    private final ApplicationEventPublisher events;
+
+    public RoomSchedulingService(JdbcTemplate sql, ApplicationEventPublisher events) {
         this.sql = sql;
+        this.events = events;
     }
 
     public List<Map<String, Object>> classes() {
@@ -78,6 +83,7 @@ public class RoomSchedulingService {
                 INSERT INTO lich_hoc (id, class_id, room_id, lesson_date, start_time, end_time)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """, id, classId, roomId, day, shift.start, shift.end);
+        events.publishEvent(new BookingSaved(day));
         return id;
     }
 
