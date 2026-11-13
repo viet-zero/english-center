@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import LearningContent from './LearningContent.jsx';
+import StatusBadge, { attendanceLabels, examStatus } from '../components/StatusBadge.jsx';
 import { api } from '../services/api.js';
 
-const attendanceLabels = {
-  PRESENT: 'Có mặt', ABSENT: 'Vắng', LATE: 'Đi muộn', EXCUSED: 'Vắng có phép',
-};
+
 const formatTime = value => String(value).replace('T', ' ').slice(0, 16);
 
 export default function AcademicsPage({ teacher, onError }) {
@@ -70,13 +69,14 @@ export default function AcademicsPage({ teacher, onError }) {
       {view.exams.length === 0 && <p>Chưa có lịch thi.</p>}
       <ul>{view.exams.map(exam => <li key={exam.id}>
         {exam.title} · {formatTime(exam.starts_at)} – {formatTime(exam.ends_at)} · {exam.room} · {exam.exam_format === 'ONLINE' ? 'Trực tuyến' : 'Trực tiếp'}
+        <StatusBadge status={examStatus(exam)} />
         {exam.invigilator && ' · Giám thị: ' + exam.invigilator}
         {!teacher && ' · Điểm: ' + (view.grades.find(grade => grade.exam_id === exam.id)?.score ?? 'Chưa có')}
       </li>)}</ul>
       <h3>Điểm danh</h3>
       <ul>{view.lessons.map(lesson => <li key={lesson.id}>
         {lesson.lesson_date} · {lesson.start_time}–{lesson.end_time}
-        {!teacher && ' · ' + (attendanceLabels[view.attendance.find(row => row.lesson_id === lesson.id)?.attendance_status] ?? 'Chưa điểm danh')}
+        {!teacher && <StatusBadge status={view.attendance.find(row => row.lesson_id === lesson.id)?.attendance_status ?? 'UNMARKED'} />}
       </li>)}</ul>
       {teacher && <div className="fields">
         <form onSubmit={submit(values => api.createExam(classId, values))}>
@@ -119,7 +119,7 @@ export default function AcademicsPage({ teacher, onError }) {
         <ul>{view.attendance.map(row => <li key={row.lesson_id + row.enrollment_id}>
           {view.students.find(item => item.id === row.enrollment_id)?.full_name ?? row.enrollment_id}
           {' · '}{view.lessons.find(item => item.id === row.lesson_id)?.lesson_date}
-          {' · '}{attendanceLabels[row.attendance_status]}
+          {' · '}<StatusBadge status={row.attendance_status} />
         </li>)}
         {view.grades.map(row => <li key={row.exam_id + row.enrollment_id}>
           {view.students.find(item => item.id === row.enrollment_id)?.full_name ?? row.enrollment_id}

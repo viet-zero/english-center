@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import StatusBadge, { attendanceLabels } from '../components/StatusBadge.jsx';
 import { api } from '../services/api.js';
 
-const choices = {
-  PRESENT: 'Có mặt', EXCUSED: 'Vắng có phép', ABSENT: 'Vắng không phép', LATE: 'Đi muộn',
-};
+
 
 export default function LessonAttendance({ lesson, onError, onClose }) {
   const [rows, setRows] = useState(null);
@@ -52,8 +51,9 @@ export default function LessonAttendance({ lesson, onError, onClose }) {
             setStatuses({ ...statuses, [row.id]: event.target.value });
             setSaved(false);
           }}>
-            {Object.entries(choices).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            {Object.entries(attendanceLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
+          <StatusBadge status={statuses[row.id]} />
         </label>)}
         <button className="outline" type="button" onClick={() => {
           setStatuses(Object.fromEntries(rows.map(row => [row.id, 'PRESENT'])));

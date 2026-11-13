@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import StatusBadge from '../components/StatusBadge.jsx';
 import { api } from '../services/api.js';
 
 const currency = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
 export const money = amount => currency.format(amount);
-const statuses = { UNPAID: 'Chưa thanh toán', PARTIAL: 'Đóng một phần', PAID: 'Đã thanh toán' };
+
 
 export default function TuitionPage({ invoiceId, onInvoice, onError }) {
   const [input, setInput] = useState(invoiceId);
@@ -42,7 +43,7 @@ export default function TuitionPage({ invoiceId, onInvoice, onError }) {
       <div><dt>Phải thu</dt><dd>{money(invoice.totalDue)}</dd></div>
       <div><dt>Đã thu</dt><dd>{money(invoice.totalPaid)}</dd></div>
       <div><dt>Còn thiếu</dt><dd>{money(invoice.remainingAmount)}</dd></div>
-      <div><dt>Trạng thái</dt><dd>{statuses[invoice.status] ?? invoice.status}</dd></div>
+      <div><dt>Trạng thái</dt><dd><StatusBadge status={invoice.status} /></dd></div>
     </dl></>}
   </section>;
 }

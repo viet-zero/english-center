@@ -92,3 +92,20 @@ dd { margin: 0; font-weight: 700; }
   .sidebar button { width: auto; }
   .bell-label { display: none; }
 }
+
+.status-badge {
+  display: inline-block;
+  margin-inline: .35rem;
+  padding: .15rem .6rem;
+  border-radius: 999px;
+  font-size: .85rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.status-success { color: #1e8e3e; background: #e3f4e8; }
+.status-warning { color: #b26a00; background: #fdf0d8; }
+.status-error { color: #c62828; background: #fde4e4; }
+.status-info { color: var(--heading); background: var(--selected); }
+[data-theme="dark"] .status-success { color: #6fd08c; background: #1f3a28; }
+[data-theme="dark"] .status-warning { color: #f0b45a; background: #40320f; }
+[data-theme="dark"] .status-error { color: #ff8a8a; background: #47201f; }
