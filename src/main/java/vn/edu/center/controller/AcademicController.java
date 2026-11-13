@@ -66,6 +66,36 @@ public class AcademicController {
         academics.grade(currentUser.employeeId(principal), classId, examId, enrollmentId, body.score());
     }
 
+
+    @GetMapping("/teacher/classes/{classId}/content")
+    public Map<String, Object> teacherContent(Principal principal, @PathVariable String classId) {
+        return academics.teacherContent(currentUser.employeeId(principal), classId);
+    }
+
+    @GetMapping("/student/classes/{classId}/content")
+    public Map<String, Object> studentContent(Principal principal, @PathVariable String classId) {
+        return academics.studentContent(currentUser.studentId(principal), classId);
+    }
+
+    @PostMapping("/teacher/classes/{classId}/content")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void publish(Principal principal, @PathVariable String classId, @Valid @RequestBody ContentRequest body) {
+        academics.publishContent(currentUser.employeeId(principal), classId, body.kind().name(),
+                body.title(), body.content());
+    }
+
+    @PutMapping("/student/classes/{classId}/assignments/{assignmentId}/submission")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void submit(Principal principal, @PathVariable String classId, @PathVariable String assignmentId,
+            @Valid @RequestBody SubmissionRequest body) {
+        academics.submitAssignment(currentUser.studentId(principal), classId, assignmentId, body.answer());
+    }
+
+    public enum ContentKind { MATERIAL, ASSIGNMENT }
+    public record ContentRequest(@NotNull ContentKind kind, @NotBlank @Size(max = 150) String title,
+            @NotBlank @Size(max = 4000) String content) {}
+    public record SubmissionRequest(@NotBlank @Size(max = 4000) String answer) {}
+
     public record ExamRequest(@NotBlank @Size(max = 150) String title, @NotNull LocalDateTime startsAt,
             @NotNull LocalDateTime endsAt, @NotBlank @Size(max = 100) String room) {}
     public record AttendanceRequest(@NotNull AttendanceStatus status) {}

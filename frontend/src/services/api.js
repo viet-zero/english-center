@@ -39,6 +39,11 @@ const id = encodeURIComponent;
 const json = (path, data, method) => post(path, JSON.stringify(data), 'application/json', method);
 
 export const api = {
+  learningContent: (scope, classId) => request('/academics/' + scope + '/classes/' + id(classId) + '/content'),
+  publishLearningContent: (classId, data) => json('/academics/teacher/classes/' + id(classId) + '/content', data),
+  submitAssignment: (classId, assignmentId, answer) => json(
+    '/academics/student/classes/' + id(classId) + '/assignments/' + id(assignmentId) + '/submission',
+    { answer }, 'PUT'),
   academicClasses: scope => request('/academics/' + scope + '/classes'),
   academicClass: (scope, classId) => request('/academics/' + scope + '/classes/' + id(classId)),
   createExam: (classId, exam) => json('/academics/teacher/classes/' + id(classId) + '/exams', exam),

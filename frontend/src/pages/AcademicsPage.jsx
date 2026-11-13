@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import LearningContent from './LearningContent.jsx';
 import { api } from '../services/api.js';
 
 const attendanceLabels = {
@@ -64,6 +65,7 @@ export default function AcademicsPage({ teacher, onError }) {
     <button type="button" disabled={busy} onClick={() => load(async () => setClasses(await api.academicClasses(scope)))}>Tải lại danh sách lớp</button>
     {message && <p role="status">{message}</p>}
     {view && <>
+      <LearningContent key={classId} classId={classId} teacher={teacher} onError={onError} />
       <h3>Lịch thi và điểm thi</h3>
       {view.exams.length === 0 && <p>Chưa có lịch thi.</p>}
       <ul>{view.exams.map(exam => <li key={exam.id}>

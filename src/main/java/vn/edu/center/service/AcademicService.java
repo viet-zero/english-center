@@ -113,6 +113,65 @@ public class AcademicService {
                 """, examId, enrollmentId, score, score);
     }
 
+
+    public Map<String, Object> teacherContent(String teacher, String classId) {
+        requireTeacher(teacher, classId, false);
+        return Map.of("items", content(classId), "submissions", sql.queryForList("""
+                SELECT b.content_id, b.enrollment_id, u.full_name, b.answer
+                FROM bai_nop b JOIN noi_dung_lop n ON n.id = b.content_id
+                JOIN dang_ky_hoc_phan e ON e.id = b.enrollment_id AND e.class_id = n.class_id
+                JOIN hoc_vien s ON s.id = e.student_id
+                JOIN nguoi_dung u ON u.id = s.user_id
+                WHERE n.class_id = ? ORDER BY u.full_name, e.id
+                """, classId));
+    }
+
+    public Map<String, Object> studentContent(String student, String classId) {
+        String enrollment = studentEnrollment(student, classId, false);
+        return Map.of("items", content(classId), "submissions", sql.queryForList("""
+                SELECT b.content_id, b.answer
+                FROM bai_nop b JOIN noi_dung_lop n ON n.id = b.content_id
+                WHERE b.enrollment_id = ? AND n.class_id = ?
+                """, enrollment, classId));
+    }
+
+    @Transactional
+    public void publishContent(String teacher, String classId, String kind, String title, String content) {
+        requireTeacher(teacher, classId, true);
+        sql.update("INSERT INTO noi_dung_lop (id,class_id,kind,title,content) VALUES (?,?,?,?,?)",
+                UUID.randomUUID().toString(), classId, kind, title.strip(), content.strip());
+    }
+
+    @Transactional
+    public void submitAssignment(String student, String classId, String assignmentId, String answer) {
+        String enrollment = studentEnrollment(student, classId, true);
+        if (sql.queryForList("""
+                SELECT id FROM noi_dung_lop WHERE id = ? AND class_id = ? AND kind = 'ASSIGNMENT'
+                """, String.class, assignmentId, classId).isEmpty()) {
+            throw forbidden();
+        }
+        sql.update("""
+                INSERT INTO bai_nop (content_id,enrollment_id,answer) VALUES (?,?,?)
+                ON DUPLICATE KEY UPDATE answer = ?, submitted_at = CURRENT_TIMESTAMP
+                """, assignmentId, enrollment, answer.strip(), answer.strip());
+    }
+
+    private String studentEnrollment(String student, String classId, boolean lock) {
+        String query = """
+                SELECT id FROM dang_ky_hoc_phan
+                WHERE class_id = ? AND student_id = ? AND status IN ('CONFIRMED','COMPLETED')
+                """;
+        return sql.queryForList(lock ? query + " FOR UPDATE" : query, String.class, classId, student)
+                .stream().findFirst().orElseThrow(AcademicService::forbidden);
+    }
+
+    private List<Map<String, Object>> content(String classId) {
+        return sql.queryForList("""
+                SELECT id, kind, title, content FROM noi_dung_lop
+                WHERE class_id = ? ORDER BY kind, title, id
+                """, classId);
+    }
+
     private List<Map<String, Object>> exams(String classId) {
         return sql.queryForList("""
                 SELECT id,title, DATE_FORMAT(starts_at, '%Y-%m-%d %H:%i') AS starts_at,
