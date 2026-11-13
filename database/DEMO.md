@@ -34,3 +34,7 @@ Chạy thêm `07-learning.sql` đúng một lần để tạo bảng tài liệu
 Chạy thêm 08-exam-management.sql đúng một lần. Nhân viên đào tạo mở Lịch thi để cập nhật phòng, hình thức và giám thị của kỳ thi đã tạo.
 
 Chạy 09-notifications.sql một lần trước khi sử dụng chuông thông báo học viên.
+
+Chạy 10-booking-staff-exam-invigilators.sql một lần sau các migration trước. Migration chuyển giám thị cũ sang bảng phân công nhiều người. Các buổi xếp trước khi có tính năng này chưa có mã người xếp. Có thể chạy demo-catalog.sql sau demo-seed.sql để tạo bốn khóa và lớp mẫu.
+
+Học phí trong demo-catalog.sql là số liệu minh họa, theo từng học phần. Giá giao tiếp và IELTS tham khảo bảng giá của [Langmaster](https://langmaster.edu.vn/hoc-phi-1-khoa-hoc-tieng-anh-giao-tiep-bao-nhieu-tien). Giá TOEIC tham khảo [ZIM](https://zim.vn/toeic). Mức nền tảng A1 là giả định cho bản demo.

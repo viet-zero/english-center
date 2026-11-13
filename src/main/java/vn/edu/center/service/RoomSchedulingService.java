@@ -18,7 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class RoomSchedulingService {
     private static final String OVERLAP = """
-            FROM lich_hoc l JOIN lop_hoc c ON c.id = l.class_id
+            FROM lich_hoc l JOIN lop_hoc c ON c.id = l.class_id LEFT JOIN nhan_vien staff ON staff.id = l.booked_by
             WHERE l.lesson_date = ? AND l.start_time < ? AND l.end_time > ?
               AND l.status <> 'CANCELLED' AND c.status <> 'CANCELLED'
             """;
@@ -44,12 +44,13 @@ public class RoomSchedulingService {
         return sql.queryForList("""
                 SELECT p.id, p.name, p.capacity, p.status,
                        (SELECT GROUP_CONCAT(DISTINCT c.class_code ORDER BY c.class_code SEPARATOR ', ')
-                """ + OVERLAP + " AND l.room_id = p.id) AS booked_classes FROM phong_hoc p ORDER BY p.name, p.id",
-                day, shift.end, shift.start);
+                """ + OVERLAP + " AND l.room_id = p.id) AS booked_classes, (SELECT GROUP_CONCAT(DISTINCT staff.employee_code ORDER BY staff.employee_code SEPARATOR ', ') "
+                + OVERLAP + " AND l.room_id = p.id AND l.booked_by IS NOT NULL) AS booked_by_codes FROM phong_hoc p ORDER BY p.name, p.id",
+                day, shift.end, shift.start, day, shift.end, shift.start);
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public String schedule(String classId, String roomId, LocalDate day, Shift shift) {
+    public String schedule(String classId, String roomId, LocalDate day, Shift shift, String employeeId) {
         // Serialize writes that share a class, teacher or room. Check conflicts after locking.
         Map<String, Object> classroom = sql.queryForList("""
                 SELECT teacher_id, max_students, start_date, end_date, status
@@ -80,9 +81,9 @@ public class RoomSchedulingService {
         }
         String id = UUID.randomUUID().toString();
         sql.update("""
-                INSERT INTO lich_hoc (id, class_id, room_id, lesson_date, start_time, end_time)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """, id, classId, roomId, day, shift.start, shift.end);
+                INSERT INTO lich_hoc (id, class_id, room_id, lesson_date, start_time, end_time, booked_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, id, classId, roomId, day, shift.start, shift.end, employeeId);
         events.publishEvent(new BookingSaved(day));
         return id;
     }

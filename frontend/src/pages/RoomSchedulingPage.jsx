@@ -38,7 +38,7 @@ export default function RoomSchedulingPage({ onError }) {
         if (!active) return;
         const byShift = Object.fromEntries(results.map(([key, rows]) => [key, new Map(rows.map(row => [row.id, row]))]));
         setRooms(results[0][1].map(room => ({
-          ...room, bookings: Object.fromEntries(shifts.map(([key]) => [key, byShift[key].get(room.id)?.booked_classes])),
+          ...room, bookings: Object.fromEntries(shifts.map(([key]) => [key, byShift[key].get(room.id)])),
         })));
       })
       .catch(error => { if (active) onError(error); })
@@ -81,7 +81,7 @@ export default function RoomSchedulingPage({ onError }) {
 
   useEffect(() => {
     if (!roomId || busy || loadingRooms) return;
-    if (rooms.some(room => room.id === roomId && room.bookings[shift])) {
+    if (rooms.some(room => room.id === roomId && room.bookings[shift]?.booked_classes)) {
       setRoomId('');
       setLiveNotice('Phòng vừa được xếp. Vui lòng chọn phòng khác.');
     }
@@ -150,7 +150,8 @@ export default function RoomSchedulingPage({ onError }) {
             <tbody>{rooms.map(room => <tr key={room.id}>
               <th scope="row">{room.name}<small>{room.capacity} chỗ</small></th>
               {shifts.map(([key, label]) => {
-                const booking = room.bookings[key];
+                const booking = room.bookings[key]?.booked_classes;
+                const staffCodes = room.bookings[key]?.booked_by_codes;
                 const reason = room.status !== 'AVAILABLE' ? 'Bảo trì'
                   : room.capacity < classroom.max_students ? 'Không đủ sức chứa' : '';
                 const selected = roomId === room.id && shift === key;
@@ -160,7 +161,7 @@ export default function RoomSchedulingPage({ onError }) {
                     data-state={booking ? 'booked' : reason ? 'unavailable' : 'free'}
                     aria-pressed={selected} aria-label={room.name + ', ' + label + ', ' + text}
                     onClick={() => { setRoomId(room.id); setShift(key); setSaved(false); setLiveNotice(''); }}>
-                    {text}
+                    {text}{booking && staffCodes && <small>Người xếp: {staffCodes}</small>}
                   </button>
                 </td>;
               })}

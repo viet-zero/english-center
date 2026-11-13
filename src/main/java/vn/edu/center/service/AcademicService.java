@@ -182,8 +182,10 @@ public class AcademicService {
     private List<Map<String, Object>> exams(String classId) {
         return sql.queryForList("""
                 SELECT x.id,x.title, DATE_FORMAT(x.starts_at, '%Y-%m-%d %H:%i') AS starts_at,
-                       DATE_FORMAT(ends_at, '%Y-%m-%d %H:%i') AS ends_at,x.room,x.exam_format,u.full_name AS invigilator
-                FROM lich_thi x LEFT JOIN nhan_vien n ON n.id = x.invigilator_id LEFT JOIN nguoi_dung u ON u.id = n.user_id WHERE x.class_id = ? ORDER BY x.starts_at
+                       DATE_FORMAT(ends_at, '%Y-%m-%d %H:%i') AS ends_at,x.room,x.exam_format,(SELECT GROUP_CONCAT(u.full_name ORDER BY u.full_name, n.id SEPARATOR ', ')
+                        FROM giam_thi_ky_thi g JOIN nhan_vien n ON n.id = g.employee_id
+                        JOIN nguoi_dung u ON u.id = n.user_id WHERE g.exam_id = x.id) AS invigilator
+                FROM lich_thi x WHERE x.class_id = ? ORDER BY x.starts_at
                 """, classId);
     }
 

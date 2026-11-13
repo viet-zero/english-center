@@ -1,6 +1,8 @@
 package vn.edu.center.controller;
 
 import java.time.LocalDate;
+import java.security.Principal;
+import vn.edu.center.service.CurrentUserService;
 import java.util.List;
 import java.util.Map;
 
@@ -18,7 +20,10 @@ import vn.edu.center.service.RoomSchedulingService.Shift;
 public class RoomSchedulingController {
     private final RoomSchedulingService scheduling;
 
-    public RoomSchedulingController(RoomSchedulingService scheduling) {
+    private final CurrentUserService currentUser;
+
+    public RoomSchedulingController(RoomSchedulingService scheduling, CurrentUserService currentUser) {
+        this.currentUser = currentUser;
         this.scheduling = scheduling;
     }
 
@@ -34,8 +39,8 @@ public class RoomSchedulingController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Map<String, String> schedule(@Valid @RequestBody ScheduleRequest request) {
-        return Map.of("id", scheduling.schedule(request.classId(), request.roomId(), request.day(), request.shift()));
+    public Map<String, String> schedule(Principal principal, @Valid @RequestBody ScheduleRequest request) {
+        return Map.of("id", scheduling.schedule(request.classId(), request.roomId(), request.day(), request.shift(), currentUser.employeeId(principal)));
     }
 
     public record ScheduleRequest(@NotBlank @Size(max = 36) String classId,

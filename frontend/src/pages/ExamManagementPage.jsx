@@ -28,7 +28,7 @@ export default function ExamManagementPage({ onError }) {
       await api.updateExam(exam.id, {
         room: fields.get('room'),
         format: fields.get('format'),
-        invigilatorId: fields.get('invigilator') || null,
+        invigilatorIds: fields.getAll('invigilator'),
       });
       setData({ ...data, exams: await api.trainingExams() });
       setSaved(true);
@@ -59,14 +59,13 @@ export default function ExamManagementPage({ onError }) {
         <label>Hình thức thi<select name="format" defaultValue={exam.exam_format}>
           <option value="ONSITE">Trực tiếp</option><option value="ONLINE">Trực tuyến</option>
         </select></label>
-        <label>Giám thị<select name="invigilator" defaultValue={exam.invigilator_id ?? ''}>
-          <option value="">Chưa phân công</option>
-          {exam.invigilator_id && !data.people.some(person => person.id === exam.invigilator_id) &&
-            <option value={exam.invigilator_id} disabled>Giám thị hiện tại đã ngừng hoạt động</option>}
-          {data.people.map(person => <option key={person.id} value={person.id}>
+        <fieldset><legend>Giám thị</legend>
+          {data.people.map(person => <label key={person.id} className="check">
+            <input type="checkbox" name="invigilator" value={person.id}
+              defaultChecked={exam.invigilator_ids?.split(',').includes(person.id)} />
             {person.full_name} · {person.employee_code}
-          </option>)}
-        </select></label>
+          </label>)}
+        </fieldset>
         <button>Lưu lịch thi</button>
       </fieldset>
     </form>}

@@ -2,6 +2,7 @@ package vn.edu.center.controller;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -33,7 +34,8 @@ public class ExamManagementController {
     @GetMapping
     public List<Map<String, Object>> exams() {
         return sql.queryForList("""
-                SELECT x.id, x.title, c.class_code, x.room, x.exam_format, x.invigilator_id,
+                SELECT x.id, x.title, c.class_code, x.room, x.exam_format, (SELECT GROUP_CONCAT(g.employee_id ORDER BY g.employee_id)
+                        FROM giam_thi_ky_thi g WHERE g.exam_id = x.id) AS invigilator_ids,
                        DATE_FORMAT(x.starts_at, '%Y-%m-%d %H:%i') AS starts_at,
                        DATE_FORMAT(x.ends_at, '%Y-%m-%d %H:%i') AS ends_at
                 FROM lich_thi x JOIN lop_hoc c ON c.id = x.class_id
@@ -51,21 +53,25 @@ public class ExamManagementController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Transactional
     public void update(@PathVariable String examId, @Valid @RequestBody ExamDetails details) {
-        if (details.invigilatorId() != null && sql.queryForList(
-                "SELECT n.id " + INVIGILATORS + " AND n.id = ?",
-                String.class, details.invigilatorId()).isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Giám thị phải là giảng viên đang hoạt động.");
-        }
-        int changed = sql.update("""
-                UPDATE lich_thi SET room = ?, exam_format = ?, invigilator_id = ? WHERE id = ?
-                """, details.room().strip(), details.format().name(), details.invigilatorId(), examId);
-        if (changed == 0 && sql.queryForList("SELECT id FROM lich_thi WHERE id = ?", String.class, examId).isEmpty()) {
+        if (sql.queryForList("SELECT id FROM lich_thi WHERE id = ? FOR UPDATE", String.class, examId).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy kỳ thi.");
         }
+        for (String employeeId : details.invigilatorIds()) {
+            if (sql.queryForList(
+                "SELECT n.id " + INVIGILATORS + " AND n.id = ?",
+                String.class, employeeId).isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Giám thị phải là giảng viên đang hoạt động.");
+            }
+        }
+        sql.update("UPDATE lich_thi SET room = ?, exam_format = ? WHERE id = ?",
+                details.room().strip(), details.format().name(), examId);
+        sql.update("DELETE FROM giam_thi_ky_thi WHERE exam_id = ?", examId);
+        sql.batchUpdate("INSERT INTO giam_thi_ky_thi (exam_id, employee_id) VALUES (?, ?)",
+                details.invigilatorIds().stream().map(id -> new Object[] {examId, id}).toList());
     }
 
     public enum Format { ONSITE, ONLINE }
 
     public record ExamDetails(@NotBlank @Size(max = 100) String room, @NotNull Format format,
-            @Size(max = 36) String invigilatorId) {}
+            @NotNull @Size(max = 30) Set<@NotBlank @Size(max = 36) String> invigilatorIds) {}
 }
