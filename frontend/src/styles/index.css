@@ -24,20 +24,20 @@
   --error-bg: #47201f;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--page); color: var(--text); font: 1rem/1.5 Roboto, system-ui, sans-serif; }
-header { background: var(--brand); color: #1e1111; }
+body { margin: 0; background: var(--page); color: var(--text); font: 1rem/1.5 "Roboto Variable", Roboto, system-ui, sans-serif; }
+header { background: var(--brand); color: #1e1111; border-bottom: 1px solid #c62828; }
 .header-inner { padding: .45rem clamp(.75rem, 3vw, 2rem); min-height: 52px; justify-content: space-between; }
 .header-inner, .session { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; }
 .session { justify-content: flex-end; }
-.portal { display: grid; grid-template-columns: 13rem minmax(0, 1fr); min-height: calc(100vh - 52px); }
-.sidebar { padding: 1rem; background: var(--card); border-right: 1px solid var(--line); }
+.portal { display: grid; grid-template-columns: 15rem minmax(0, 1fr); min-height: calc(100vh - 52px); }
+.sidebar { padding: 1.4rem 1rem; background: var(--card); border-right: 1px solid var(--line); }
 .sidebar > strong { color: var(--heading); }
 .sidebar nav { display: grid; margin-top: .8rem; }
 .sidebar button { width: 100%; text-align: left; border: 0; border-bottom: 1px solid var(--brand); border-radius: 0; background: var(--card); color: var(--text); font-weight: 500; }
 .sidebar button:hover, .sidebar button[aria-current="page"] { background: var(--selected); color: var(--heading); font-weight: 700; }
 main { width: min(85rem, 100%); margin: 0 auto; padding: clamp(.75rem, 3vw, 2rem); min-width: 0; }
-.panel { background: var(--card); border: 1px solid var(--line); border-radius: .65rem; padding: clamp(1rem, 3vw, 1.6rem); margin-bottom: 1rem; }
-.login { max-width: 29rem; margin: 2rem auto; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: .75rem; padding: clamp(1rem, 3vw, 2rem); margin-bottom: 1.25rem; }
+.login { max-width: 29rem; margin: clamp(2rem, 10vh, 6rem) auto; border-top: 4px solid var(--brand); }
 h1, h2, h3, h4 { margin: 0 0 .7rem; color: var(--heading); line-height: 1.2; }
 a { color: var(--heading); }
 form, fieldset { display: grid; gap: .8rem; }
@@ -138,3 +138,28 @@ dd { margin: 0; font-weight: 700; }
 .room-slot[data-state="booked"] { background: var(--selected); color: var(--heading); border: 1px solid var(--heading); opacity: 1; }
 .room-slot[data-state="unavailable"] { background: repeating-linear-gradient(135deg, var(--page), var(--page) 5px, var(--card) 5px, var(--card) 10px); }
 [data-theme="dark"] .room-slot[aria-pressed="true"] { background: #1f3a28; color: #6fd08c; }
+
+.brand { display: flex; align-items: center; gap: .7rem; font-size: 1.125rem; }
+.brand-mark { display: grid; place-items: center; width: 2.2rem; aspect-ratio: 1; border-radius: .45rem; color: #fff; background: #2e3192; font-size: .85rem; font-weight: 750; letter-spacing: .03em; }
+.session-name { font-weight: 700; overflow-wrap: anywhere; }
+.sidebar > strong { display: block; padding: .35rem .65rem; font-size: 1.1rem; }
+.sidebar nav { gap: .15rem; }
+.sidebar button { padding: .7rem .65rem; }
+.panel > h1 { font-size: clamp(1.4rem, 2.4vw, 1.9rem); letter-spacing: -.02em; margin-bottom: 1.15rem; }
+.panel > form + form, .panel > form + label, .panel > label + form { margin-top: 1.25rem; }
+.panel > form > fieldset > legend { margin-bottom: .55rem; color: var(--heading); font-weight: 700; }
+.panel article { margin-block: .45rem; }
+input:not([type="radio"], [type="checkbox"]), select, button { min-height: 2.5rem; }
+button:not(:disabled):hover { filter: brightness(.93); }
+:focus-visible { outline: 2px solid var(--heading); outline-offset: 3px; }
+.login form > button { width: 100%; }
+.table-scroll { border-radius: .45rem; }
+.totals > div { border: 1px solid var(--line); border-radius: .5rem; padding: .7rem; }
+.totals dt { color: var(--muted); font-size: .875rem; }
+.totals dd { font-variant-numeric: tabular-nums; margin-top: .2rem; }
+@media (max-width: 45rem) {
+  .sidebar { padding: .65rem .75rem; }
+  .session { gap: .35rem; }
+  .header-inner { column-gap: .5rem; }
+  .attendance-options button { min-height: 2.5rem; }
+}

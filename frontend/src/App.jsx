@@ -77,12 +77,12 @@ export default function App() {
 
   return <>
     <header><div className="header-inner">
-      <strong>English Center</strong>
+      <div className="brand"><span className="brand-mark" aria-hidden="true">EC</span><strong>English Center</strong></div>
       <div className="session">
         <button className="secondary" onClick={() => setDark(!dark)}>{dark ? 'Chế độ sáng' : 'Chế độ tối'}</button>
         {user && <>
           {roles.includes('STUDENT') && <NotificationBell key={user.username} />}
-          <span>{user.username}</span>
+          <span className="session-name">{user.username}</span>
           <button className="secondary" onClick={logout} disabled={loggingOut}>Đăng xuất</button>
         </>}
       </div>
