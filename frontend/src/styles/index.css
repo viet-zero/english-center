@@ -163,3 +163,6 @@ button:not(:disabled):hover { filter: brightness(.93); }
   .header-inner { column-gap: .5rem; }
   .attendance-options button { min-height: 2.5rem; }
 }
+
+.room-slot[data-state="conflict"] { background: var(--error-bg); color: var(--error); border: 1px solid var(--error); opacity: 1; }
+.room-slot small { display: block; font-weight: 500; }

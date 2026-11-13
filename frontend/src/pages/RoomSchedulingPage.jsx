@@ -18,7 +18,7 @@ export default function RoomSchedulingPage({ onError }) {
   const [loadingRooms, setLoadingRooms] = useState(false);
   const [revision, setRevision] = useState(0);
   const [saved, setSaved] = useState(false);
-  const [liveNotice, setLiveNotice] = useState('');
+  const [conflict, setConflict] = useState(null);
   const [connected, setConnected] = useState(false);
   const classroom = classes.find(item => item.id === classId);
 
@@ -83,12 +83,12 @@ export default function RoomSchedulingPage({ onError }) {
     if (!roomId || busy || loadingRooms) return;
     if (rooms.some(room => room.id === roomId && room.bookings[shift]?.booked_classes)) {
       setRoomId('');
-      setLiveNotice('Phòng vừa được xếp. Vui lòng chọn phòng khác.');
+      setConflict({ roomId, shift });
     }
   }, [rooms, roomId, shift, busy, loadingRooms]);
 
   function changeSlot(update, value) {
-    setLiveNotice('');
+    setConflict(null);
     update(value);
     setRooms([]);
     setRoomId('');
@@ -98,7 +98,7 @@ export default function RoomSchedulingPage({ onError }) {
 
   async function save(event) {
     event.preventDefault();
-    setLiveNotice('');
+    setConflict(null);
     setBusy(true);
     setSaved(false);
     onError(null);
@@ -118,7 +118,7 @@ export default function RoomSchedulingPage({ onError }) {
   return <section className="panel">
     <h1>Xếp phòng học</h1>
     {day && <p>{connected ? 'Đang cập nhật phòng trực tiếp' : 'Đang kết nối cập nhật phòng…'}</p>}
-    {liveNotice && <p role="alert" className="notice">{liveNotice}</p>}
+    {conflict && <p role="alert" className="notice">Phòng vừa được xếp. Vui lòng chọn phòng khác.</p>}
     <form onSubmit={save}>
       <fieldset disabled={busy}>
         <div className="fields">
@@ -155,12 +155,13 @@ export default function RoomSchedulingPage({ onError }) {
                 const reason = room.status !== 'AVAILABLE' ? 'Bảo trì'
                   : room.capacity < classroom.max_students ? 'Không đủ sức chứa' : '';
                 const selected = roomId === room.id && shift === key;
+                const justBooked = booking && conflict?.roomId === room.id && conflict.shift === key;
                 const text = booking || reason || (selected ? 'Đã chọn' : 'Trống');
                 return <td key={key}>
                   <button type="button" className="room-slot" disabled={Boolean(reason || booking)}
-                    data-state={booking ? 'booked' : reason ? 'unavailable' : 'free'}
-                    aria-pressed={selected} aria-label={room.name + ', ' + label + ', ' + text}
-                    onClick={() => { setRoomId(room.id); setShift(key); setSaved(false); setLiveNotice(''); }}>
+                    data-state={justBooked ? 'conflict' : booking ? 'booked' : reason ? 'unavailable' : 'free'}
+                    aria-pressed={selected} aria-label={room.name + ', ' + label + ', ' + text + (staffCodes ? ', Người xếp: ' + staffCodes : '')}
+                    onClick={() => { setRoomId(room.id); setShift(key); setSaved(false); setConflict(null); }}>
                     {text}{booking && staffCodes && <small>Người xếp: {staffCodes}</small>}
                   </button>
                 </td>;
