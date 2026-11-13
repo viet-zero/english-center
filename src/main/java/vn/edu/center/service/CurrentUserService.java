@@ -33,7 +33,8 @@ public class CurrentUserService {
         List<String> ids = entityManager.createQuery(
                 "select p.id from " + entity + " p, Account a "
                 + "where p.userId = a.userId and a.username = :username "
-                + "and a.status = 'ACTIVE' and p.status = 'ACTIVE'", String.class)
+                + "and a.status = 'ACTIVE' and p.status = 'ACTIVE'"
+                + ("Employee".equals(entity) ? " and p.deleted = false" : ""), String.class)
                 .setParameter("username", principal.getName()).setMaxResults(2).getResultList();
         if (ids.size() != 1) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Active user profile required");

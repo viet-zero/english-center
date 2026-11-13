@@ -18,14 +18,18 @@ public class InvoiceService {
     }
 
     public InvoiceResponse findForStudent(String invoiceId, String studentId) {
-        var invoice = invoices.findById(invoiceId)
+        var invoice = invoices.findById(invoices.resolveId(invoiceId))
                 .filter(value -> studentId.equals(value.getStudentId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invoice not found"));
-        return new InvoiceResponse(invoice.getId(), invoice.getCreatedAt(),
+        return new InvoiceResponse(invoice.getId(), "HD" + invoices.findNumberById(invoice.getId()), invoice.getCreatedAt(),
                 invoice.getTotalDue(), invoice.getTotalPaid(),
                 invoice.getTotalDue().subtract(invoice.getTotalPaid()), invoice.getStatus());
     }
 
-    public record InvoiceResponse(String id, LocalDateTime createdAt, BigDecimal totalDue,
+    public String resolveId(String reference) {
+        return invoices.resolveId(reference);
+    }
+
+    public record InvoiceResponse(String id, String invoiceCode, LocalDateTime createdAt, BigDecimal totalDue,
             BigDecimal totalPaid, BigDecimal remainingAmount, String status) {}
 }

@@ -28,17 +28,26 @@ async function request(path, options) {
   return response.status === 204 ? undefined : response.json();
 }
 
-async function post(path, body, contentType) {
+async function post(path, body, contentType, method = 'POST') {
   const csrf = await request('/auth/csrf');
   const headers = { [csrf.headerName]: csrf.token };
   if (contentType) headers['Content-Type'] = contentType;
-  return request(path, { method: 'POST', headers, body });
+  return request(path, { method, headers, body });
 }
 
 const id = encodeURIComponent;
-const json = (path, data) => post(path, JSON.stringify(data), 'application/json');
+const json = (path, data, method) => post(path, JSON.stringify(data), 'application/json', method);
 
 export const api = {
+  academicClasses: scope => request('/academics/' + scope + '/classes'),
+  academicClass: (scope, classId) => request('/academics/' + scope + '/classes/' + id(classId)),
+  createExam: (classId, exam) => json('/academics/teacher/classes/' + id(classId) + '/exams', exam),
+  attendance: (classId, lessonId, enrollmentId, status) => json(
+    '/academics/teacher/classes/' + id(classId) + '/lessons/' + id(lessonId) + '/attendance/' + id(enrollmentId),
+    { status }, 'PUT'),
+  grade: (classId, examId, enrollmentId, score) => json(
+    '/academics/teacher/classes/' + id(classId) + '/exams/' + id(examId) + '/grades/' + id(enrollmentId),
+    { score }, 'PUT'),
   me: () => request('/auth/me'),
   async login(username, password) {
     await post('/auth/login', new URLSearchParams({ username, password }),

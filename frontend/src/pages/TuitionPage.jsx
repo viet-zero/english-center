@@ -17,7 +17,7 @@ export default function TuitionPage({ invoiceId, onInvoice, onError }) {
     if (!invoiceId) return;
     let active = true;
     setBusy(true);
-    api.invoice(invoiceId).then(data => { if (active) setInvoice(data); })
+    api.invoice(invoiceId).then(data => { if (active) { setInvoice(data); setInput(data.invoiceCode ?? invoiceId); } })
       .catch(error => { if (active) onError(error); })
       .finally(() => { if (active) setBusy(false); });
     return () => { active = false; };
@@ -38,12 +38,12 @@ export default function TuitionPage({ invoiceId, onInvoice, onError }) {
       <label>Mã hóa đơn<input required maxLength={36} value={input} onChange={event => setInput(event.target.value)} /></label>
       <button disabled={busy}>{busy ? 'Đang tải…' : 'Tra cứu'}</button>
     </form>
-    {invoice && <dl className="totals">
+    {invoice && <><p>Mã hóa đơn: <strong>{invoice.invoiceCode}</strong></p><dl className="totals">
       <div><dt>Phải thu</dt><dd>{money(invoice.totalDue)}</dd></div>
       <div><dt>Đã thu</dt><dd>{money(invoice.totalPaid)}</dd></div>
       <div><dt>Còn thiếu</dt><dd>{money(invoice.remainingAmount)}</dd></div>
       <div><dt>Trạng thái</dt><dd>{statuses[invoice.status] ?? invoice.status}</dd></div>
-    </dl>}
+    </dl></>}
   </section>;
 }
 

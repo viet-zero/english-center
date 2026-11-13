@@ -34,7 +34,7 @@ public class InvoiceController {
     public PaymentResponse recordPayment(Principal principal,
             @PathVariable @Size(max = 36) String invoiceId,
             @Valid @RequestBody PaymentRequest request) {
-        var payment = payments.recordPayment(invoiceId, currentUser.employeeId(principal),
+        var payment = payments.recordPayment(invoices.resolveId(invoiceId), currentUser.employeeId(principal),
                 request.amount(), request.method(), request.referenceCode());
         return new PaymentResponse(payment.getId(), payment.getInvoiceId(), payment.getAmount(),
                 payment.getPaidAt(), payment.getStatus(), payment.getReferenceCode());

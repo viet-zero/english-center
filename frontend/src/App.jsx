@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import AcademicsPage from './pages/AcademicsPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import CoursesPage from './pages/CoursesPage.jsx';
 import TuitionPage, { PaymentForm } from './pages/TuitionPage.jsx';
@@ -42,6 +43,7 @@ export default function App() {
   }
 
   const student = user?.roles.includes('STUDENT');
+  const teacher = user?.roles.includes('TEACHER');
   const accountant = user?.roles.includes('ACCOUNTANT');
   return <>
     <header><div className="header-inner">
@@ -58,8 +60,10 @@ export default function App() {
         <CoursesPage onInvoice={setInvoiceId} onError={onError} />
         <TuitionPage invoiceId={invoiceId} onInvoice={setInvoiceId} onError={onError} />
       </>}
+      {student && <AcademicsPage key="student" onError={onError} />}
+      {teacher && <AcademicsPage key="teacher" teacher onError={onError} />}
       {accountant && <PaymentForm onError={onError} />}
-      {user && !student && !accountant && <p>Vai trò của bạn chưa có màn hình trong cổng này.</p>}
+      {user && !student && !accountant && !teacher && <p>Vai trò của bạn chưa có màn hình trong cổng này.</p>}
     </main>
   </>;
 }
