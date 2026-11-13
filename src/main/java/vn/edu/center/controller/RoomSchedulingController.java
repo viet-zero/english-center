@@ -1,0 +1,43 @@
+package vn.edu.center.controller;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import vn.edu.center.service.RoomSchedulingService;
+import vn.edu.center.service.RoomSchedulingService.Shift;
+
+@RestController
+@RequestMapping("/api/training/room-scheduling")
+public class RoomSchedulingController {
+    private final RoomSchedulingService scheduling;
+
+    public RoomSchedulingController(RoomSchedulingService scheduling) {
+        this.scheduling = scheduling;
+    }
+
+    @GetMapping("/classes")
+    public List<Map<String, Object>> classes() {
+        return scheduling.classes();
+    }
+
+    @GetMapping("/rooms")
+    public List<Map<String, Object>> rooms(@RequestParam LocalDate day, @RequestParam Shift shift) {
+        return scheduling.rooms(day, shift);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public Map<String, String> schedule(@Valid @RequestBody ScheduleRequest request) {
+        return Map.of("id", scheduling.schedule(request.classId(), request.roomId(), request.day(), request.shift()));
+    }
+
+    public record ScheduleRequest(@NotBlank @Size(max = 36) String classId,
+            @NotBlank @Size(max = 36) String roomId, @NotNull LocalDate day, @NotNull Shift shift) {}
+}
