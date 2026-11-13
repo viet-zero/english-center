@@ -120,7 +120,12 @@ export default function RoomSchedulingPage({ onError }) {
           </select></label>
           <label>Ngày học<input type="date" value={day} min={classroom?.start_date}
             max={classroom?.end_date} disabled={!classroom} required
-            onChange={event => { setLoadingRooms(Boolean(event.target.value)); changeSlot(setDay, event.target.value); }} /></label>
+            onInput={event => {
+              const nextDay = event.currentTarget.value;
+              if (nextDay === day) return;
+              setLoadingRooms(Boolean(nextDay));
+              changeSlot(setDay, nextDay);
+            }} /></label>
           <label>Ca học<select value={shift} onChange={event => changeSlot(setShift, event.target.value)}>
             <option value="MORNING">Ca sáng · 08:30–11:30</option>
             <option value="AFTERNOON">Ca chiều · 13:30–16:30</option>
