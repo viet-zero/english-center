@@ -69,6 +69,8 @@ export const api = {
   trainingCourses: () => request('/training/courses'),
   trainingModules: courseId => request('/training/courses/' + id(courseId) + '/modules'),
   trainingClasses: moduleId => request('/training/modules/' + id(moduleId) + '/classes'),
+  notifications: signal => request('/academics/student/notifications', { signal }),
+  markNotificationRead: notificationId => json('/academics/student/notifications/' + id(notificationId) + '/read', {}, 'PUT'),
   me: () => request('/auth/me'),
   async login(username, password) {
     await post('/auth/login', new URLSearchParams({ username, password }),

@@ -109,3 +109,5 @@ dd { margin: 0; font-weight: 700; }
 [data-theme="dark"] .status-success { color: #6fd08c; background: #1f3a28; }
 [data-theme="dark"] .status-warning { color: #f0b45a; background: #40320f; }
 [data-theme="dark"] .status-error { color: #ff8a8a; background: #47201f; }
+.notification-list { position: absolute; right: 0; z-index: 2; width: min(21rem, 80vw); max-height: 65vh; overflow: auto; background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: .5rem; padding: .75rem; }
+.notification-list article { margin-top: .5rem; }

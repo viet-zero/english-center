@@ -18,9 +18,12 @@ public class PaymentService {
     private final InvoiceRepository invoices;
     private final PaymentRepository payments;
 
-    public PaymentService(InvoiceRepository invoices, PaymentRepository payments) {
+    private final NotificationService notifications;
+
+    public PaymentService(InvoiceRepository invoices, PaymentRepository payments, NotificationService notifications) {
         this.invoices = invoices;
         this.payments = payments;
+        this.notifications = notifications;
     }
 
     // employeeId must be derived from authentication; this operation records confirmed receipts.
@@ -71,6 +74,7 @@ public class PaymentService {
         invoice.setTotalPaid(updatedTotal);
         invoice.setStatus(updatedTotal.compareTo(invoice.getTotalDue()) == 0 ? "PAID" : "PARTIAL");
         invoices.saveAndFlush(invoice);
+        notifications.notifyStudent(invoice.getStudentId(), "Học phí đã cập nhật cho hóa đơn HD" + invoices.findNumberById(invoiceId));
         return payment;
     }
 }

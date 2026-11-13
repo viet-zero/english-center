@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import NotificationBell from './components/NotificationBell.jsx';
 import AcademicsPage from './pages/AcademicsPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import CoursesPage from './pages/CoursesPage.jsx';
@@ -79,10 +80,7 @@ export default function App() {
       <div className="session">
         <button className="secondary" onClick={() => setDark(!dark)}>{dark ? 'Chế độ sáng' : 'Chế độ tối'}</button>
         {user && <>
-          <details className="notifications">
-            <summary aria-label="Thông báo">🔔 <span className="bell-label">Thông báo</span></summary>
-            <p>Chưa có thông báo.</p>
-          </details>
+          {roles.includes('STUDENT') && <NotificationBell key={user.username} />}
           <span>{user.username}</span>
           <button className="secondary" onClick={logout} disabled={loggingOut}>Đăng xuất</button>
         </>}

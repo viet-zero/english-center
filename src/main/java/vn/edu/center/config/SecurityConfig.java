@@ -34,6 +34,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/academics/teacher/**").hasRole("TEACHER")
                 .requestMatchers(HttpMethod.PUT, "/api/academics/student/classes/*/assignments/*/submission").hasRole("STUDENT")
                 .requestMatchers(HttpMethod.GET, "/api/academics/student/**").hasRole("STUDENT")
+                .requestMatchers(HttpMethod.PUT, "/api/academics/student/notifications/*/read").hasRole("STUDENT")
                 .anyRequest().denyAll());
         http.requestCache(cache -> cache.disable());
         http.exceptionHandling(errors -> errors

@@ -22,7 +22,7 @@ class PaymentServiceTest {
     void setUp() {
         invoices = mock(InvoiceRepository.class);
         payments = mock(PaymentRepository.class);
-        service = new PaymentService(invoices, payments);
+        service = new PaymentService(invoices, payments, mock(NotificationService.class, withSettings().mockMaker("mock-maker-subclass")));
         invoice = new Invoice();
         invoice.setId("invoice");
         invoice.setTotalDue(new BigDecimal("100.00"));

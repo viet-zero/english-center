@@ -17,8 +17,11 @@ import org.springframework.web.server.ResponseStatusException;
 public class AcademicService {
     private final JdbcTemplate sql;
 
-    public AcademicService(JdbcTemplate sql) {
+    private final NotificationService notifications;
+
+    public AcademicService(JdbcTemplate sql, NotificationService notifications) {
         this.sql = sql;
+        this.notifications = notifications;
     }
 
     public List<Map<String, Object>> teacherClasses(String teacher) {
@@ -82,6 +85,7 @@ public class AcademicService {
         String id = UUID.randomUUID().toString();
         sql.update("INSERT INTO lich_thi (id,class_id,title,starts_at,ends_at,room) VALUES (?,?,?,?,?,?)",
                 id, classId, title.strip(), startsAt, endsAt, room.strip());
+        notifications.notifyClass(classId, "Lịch thi mới: " + title.strip());
         return id;
     }
 
@@ -140,6 +144,9 @@ public class AcademicService {
         requireTeacher(teacher, classId, true);
         sql.update("INSERT INTO noi_dung_lop (id,class_id,kind,title,content) VALUES (?,?,?,?,?)",
                 UUID.randomUUID().toString(), classId, kind, title.strip(), content.strip());
+        if ("ASSIGNMENT".equals(kind)) {
+            notifications.notifyClass(classId, "Bài tập mới: " + title.strip());
+        }
     }
 
     @Transactional
