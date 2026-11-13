@@ -2,9 +2,10 @@
 
 Tạo một schema MySQL trống tên `english_center_demo` và chọn nó làm mặc định trong Workbench. Chạy `schema.sql` rồi `06-academics.sql`, sau đó đặt biến phiên MySQL `@demo_password_hash` thành hash BCrypt do bạn tạo cục bộ. Chạy `demo-seed.sql` trong cùng kết nối. Có thể tạo hash bằng `new BCryptPasswordEncoder().encode(password)` trong Java với thư viện Spring Security Crypto của dự án. Giữ mật khẩu và hash bên ngoài Git.
 
-Từ thư mục gốc dự án, đặt `DB_PASSWORD` bằng mật khẩu MySQL trên máy rồi chạy trong PowerShell.
+Mở PowerShell tại thư mục gốc dự án và chạy các lệnh dưới đây. Lệnh đầu đặt biến môi trường `DB_PASSWORD` cho phiên PowerShell hiện tại. Khi được hỏi, nhập mật khẩu MySQL của tài khoản cấu hình trong ứng dụng.
 
 ```powershell
+$env:DB_PASSWORD = Read-Host -MaskInput 'Nhập mật khẩu MySQL'
 $env:SPRING_DATASOURCE_URL = 'jdbc:mysql://127.0.0.1:3306/english_center_demo?useSSL=false&allowPublicKeyRetrieval=true'
 $env:SPRING_JPA_HIBERNATE_DDL_AUTO = 'validate'
 $env:SERVER_ADDRESS = '127.0.0.1'

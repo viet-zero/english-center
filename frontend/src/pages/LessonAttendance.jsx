@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import StatusBadge, { attendanceLabels } from '../components/StatusBadge.jsx';
+import { attendanceLabels } from '../components/StatusBadge.jsx';
 import { api } from '../services/api.js';
 
 
@@ -19,6 +19,12 @@ export default function LessonAttendance({ lesson, onError, onClose }) {
     }).catch(error => { if (active) onError(error); });
     return () => { active = false; };
   }, [lesson, onError]);
+
+  useEffect(() => {
+    if (!saved) return;
+    const timer = setTimeout(() => setSaved(false), 4000);
+    return () => clearTimeout(timer);
+  }, [saved]);
 
   async function save(event) {
     event.preventDefault();
@@ -45,16 +51,17 @@ export default function LessonAttendance({ lesson, onError, onClose }) {
     {rows?.length > 0 && <form onSubmit={save}>
       <p>Có mặt {present}/{rows.length}</p>
       <fieldset disabled={busy}>
-        {rows.map(row => <label className="attendance-row" key={row.id}>
-          {row.full_name} · {row.student_code}
-          <select value={statuses[row.id]} onChange={event => {
-            setStatuses({ ...statuses, [row.id]: event.target.value });
-            setSaved(false);
-          }}>
-            {Object.entries(attendanceLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </select>
-          <StatusBadge status={statuses[row.id]} />
-        </label>)}
+        {rows.map(row => <div className="attendance-row" key={row.id}>
+          <strong id={'attendance-' + row.id}>{row.full_name} · {row.student_code}</strong>
+          <div className="attendance-options" role="group" aria-labelledby={'attendance-' + row.id}>
+            {Object.entries(attendanceLabels).map(([value, label]) =>
+              <button key={value} type="button" className="outline" data-status={value}
+                aria-pressed={statuses[row.id] === value} onClick={() => {
+                  setStatuses(current => ({ ...current, [row.id]: value }));
+                  setSaved(false);
+                }}>{label}</button>)}
+          </div>
+        </div>)}
         <button className="outline" type="button" onClick={() => {
           setStatuses(Object.fromEntries(rows.map(row => [row.id, 'PRESENT'])));
           setSaved(false);
@@ -62,6 +69,6 @@ export default function LessonAttendance({ lesson, onError, onClose }) {
         <button>Lưu điểm danh</button>
       </fieldset>
     </form>}
-    {saved && <p role="status">Đã lưu điểm danh cả lớp.</p>}
+    {saved && <p className="attendance-toast" role="status">Đã lưu điểm danh cả lớp.</p>}
   </section>;
 }

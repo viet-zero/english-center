@@ -67,11 +67,17 @@ export default function AcademicsPage({ teacher, onError }) {
       <LearningContent key={classId} classId={classId} teacher={teacher} onError={onError} />
       <h3>Lịch thi và điểm thi</h3>
       {view.exams.length === 0 && <p>Chưa có lịch thi.</p>}
-      <ul>{view.exams.map(exam => <li key={exam.id}>
-        {exam.title} · {formatTime(exam.starts_at)} – {formatTime(exam.ends_at)} · {exam.room} · {exam.exam_format === 'ONLINE' ? 'Trực tuyến' : 'Trực tiếp'}
+      <ul className="exam-list">{view.exams.map(exam => <li key={exam.id}>
+        <time className="exam-date" dateTime={exam.starts_at.slice(0, 10)}>
+          <strong>{exam.starts_at.slice(8, 10)}</strong>Tháng {Number(exam.starts_at.slice(5, 7))}
+        </time>
+        <div>
+          <strong>{exam.title}</strong>
+          <div>{formatTime(exam.starts_at)} – {formatTime(exam.ends_at)} · {exam.room} · {exam.exam_format === 'ONLINE' ? 'Trực tuyến' : 'Trực tiếp'}</div>
+          {exam.invigilator && <small>Giám thị: {exam.invigilator}</small>}
+          {!teacher && <div>Điểm: {view.grades.find(grade => grade.exam_id === exam.id)?.score ?? 'Chưa có'}</div>}
+        </div>
         <StatusBadge status={examStatus(exam)} />
-        {exam.invigilator && ' · Giám thị: ' + exam.invigilator}
-        {!teacher && ' · Điểm: ' + (view.grades.find(grade => grade.exam_id === exam.id)?.score ?? 'Chưa có')}
       </li>)}</ul>
       <h3>Điểm danh</h3>
       <ul>{view.lessons.map(lesson => <li key={lesson.id}>

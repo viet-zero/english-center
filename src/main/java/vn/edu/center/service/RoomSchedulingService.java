@@ -43,8 +43,8 @@ public class RoomSchedulingService {
     public List<Map<String, Object>> rooms(LocalDate day, Shift shift) {
         return sql.queryForList("""
                 SELECT p.id, p.name, p.capacity, p.status,
-                       EXISTS (SELECT 1
-                """ + OVERLAP + " AND l.room_id = p.id) AS occupied FROM phong_hoc p ORDER BY p.name, p.id",
+                       (SELECT GROUP_CONCAT(DISTINCT c.class_code ORDER BY c.class_code SEPARATOR ', ')
+                """ + OVERLAP + " AND l.room_id = p.id) AS booked_classes FROM phong_hoc p ORDER BY p.name, p.id",
                 day, shift.end, shift.start);
     }
 

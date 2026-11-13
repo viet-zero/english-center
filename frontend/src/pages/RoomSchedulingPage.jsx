@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../services/api.js';
 
+const shifts = [
+  ['MORNING', 'Ca sáng · 08:30–11:30'],
+  ['AFTERNOON', 'Ca chiều · 13:30–16:30'],
+  ['EVENING', 'Ca tối · 18:00–20:00'],
+];
+
 export default function RoomSchedulingPage({ onError }) {
   const [classes, setClasses] = useState([]);
   const [classId, setClassId] = useState('');
   const [day, setDay] = useState('');
-  const [shift, setShift] = useState('MORNING');
+  const [shift, setShift] = useState('');
   const [rooms, setRooms] = useState([]);
   const [roomId, setRoomId] = useState('');
   const [busy, setBusy] = useState(false);
@@ -27,11 +33,18 @@ export default function RoomSchedulingPage({ onError }) {
     if (!day) return;
     let active = true;
     setLoadingRooms(true);
-    api.schedulingRooms(day, shift).then(rows => { if (active) setRooms(rows); })
+    Promise.all(shifts.map(async ([key]) => [key, await api.schedulingRooms(day, key)]))
+      .then(results => {
+        if (!active) return;
+        const byShift = Object.fromEntries(results.map(([key, rows]) => [key, new Map(rows.map(row => [row.id, row]))]));
+        setRooms(results[0][1].map(room => ({
+          ...room, bookings: Object.fromEntries(shifts.map(([key]) => [key, byShift[key].get(room.id)?.booked_classes])),
+        })));
+      })
       .catch(error => { if (active) onError(error); })
       .finally(() => { if (active) setLoadingRooms(false); });
     return () => { active = false; };
-  }, [day, shift, revision, onError]);
+  }, [day, revision, onError]);
 
   useEffect(() => {
     if (!day) return;
@@ -68,11 +81,11 @@ export default function RoomSchedulingPage({ onError }) {
 
   useEffect(() => {
     if (!roomId || busy || loadingRooms) return;
-    if (rooms.some(room => room.id === roomId && room.occupied)) {
+    if (rooms.some(room => room.id === roomId && room.bookings[shift])) {
       setRoomId('');
       setLiveNotice('Phòng vừa được xếp. Vui lòng chọn phòng khác.');
     }
-  }, [rooms, roomId, busy, loadingRooms]);
+  }, [rooms, roomId, shift, busy, loadingRooms]);
 
   function changeSlot(update, value) {
     setLiveNotice('');
@@ -114,6 +127,7 @@ export default function RoomSchedulingPage({ onError }) {
             setDay(classes.find(item => item.id === event.target.value)?.start_date ?? '');
             setLoadingRooms(false);
             changeSlot(setRoomId, '');
+            setRevision(value => value + 1);
           }} required>
             <option value="">Chọn lớp</option>
             {classes.map(item => <option key={item.id} value={item.id}>{item.class_code} · {item.max_students} học viên</option>)}
@@ -126,27 +140,33 @@ export default function RoomSchedulingPage({ onError }) {
               setLoadingRooms(Boolean(nextDay));
               changeSlot(setDay, nextDay);
             }} /></label>
-          <label>Ca học<select value={shift} onChange={event => changeSlot(setShift, event.target.value)}>
-            <option value="MORNING">Ca sáng · 08:30–11:30</option>
-            <option value="AFTERNOON">Ca chiều · 13:30–16:30</option>
-            <option value="EVENING">Ca tối · 18:00–20:00</option>
-          </select></label>
         </div>
         {day && loadingRooms && <p role="status">Đang tải phòng…</p>}
-        {day && !loadingRooms && <fieldset>
-          <legend>Phòng học</legend>
-          {rooms.length === 0 && <p>Chưa có phòng để hiển thị.</p>}
-          {rooms.map(room => {
-            const reason = room.status !== 'AVAILABLE' ? 'Bảo trì'
-              : room.capacity < classroom.max_students ? 'Không đủ sức chứa'
-                : room.occupied ? 'Đã có lịch' : '';
-            return <label className="check" key={room.id}>
-              <input type="radio" name="room" checked={roomId === room.id}
-                disabled={Boolean(reason)} onChange={() => { setRoomId(room.id); setSaved(false); setLiveNotice(''); }} />
-              {room.name} · {room.capacity} chỗ · {reason || 'Trống'}
-            </label>;
-          })}
-        </fieldset>}
+        {day && !loadingRooms && rooms.length === 0 && <p>Chưa có phòng để hiển thị.</p>}
+        {day && !loadingRooms && rooms.length > 0 && <div className="table-scroll" tabIndex={0} aria-label="Lưới xếp phòng">
+          <table className="room-grid">
+            <thead><tr><th scope="col">Phòng học</th>{shifts.map(([key, label]) =>
+              <th key={key} scope="col">{label}</th>)}</tr></thead>
+            <tbody>{rooms.map(room => <tr key={room.id}>
+              <th scope="row">{room.name}<small>{room.capacity} chỗ</small></th>
+              {shifts.map(([key, label]) => {
+                const booking = room.bookings[key];
+                const reason = room.status !== 'AVAILABLE' ? 'Bảo trì'
+                  : room.capacity < classroom.max_students ? 'Không đủ sức chứa' : '';
+                const selected = roomId === room.id && shift === key;
+                const text = booking || reason || (selected ? 'Đã chọn' : 'Trống');
+                return <td key={key}>
+                  <button type="button" className="room-slot" disabled={Boolean(reason || booking)}
+                    data-state={booking ? 'booked' : reason ? 'unavailable' : 'free'}
+                    aria-pressed={selected} aria-label={room.name + ', ' + label + ', ' + text}
+                    onClick={() => { setRoomId(room.id); setShift(key); setSaved(false); setLiveNotice(''); }}>
+                    {text}
+                  </button>
+                </td>;
+              })}
+            </tr>)}</tbody>
+          </table>
+        </div>}
         <button disabled={!classId || !day || !roomId || loadingRooms}>Xếp lớp vào phòng</button>
       </fieldset>
     </form>

@@ -111,3 +111,30 @@ dd { margin: 0; font-weight: 700; }
 [data-theme="dark"] .status-error { color: #ff8a8a; background: #47201f; }
 .notification-list { position: absolute; right: 0; z-index: 2; width: min(21rem, 80vw); max-height: 65vh; overflow: auto; background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: .5rem; padding: .75rem; }
 .notification-list article { margin-top: .5rem; }
+
+.attendance-row { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .6rem; padding-block: .65rem; border-bottom: 1px solid var(--line); }
+.attendance-options { display: flex; flex-wrap: wrap; }
+.attendance-options button { border-radius: 0; }
+.attendance-options button:first-child { border-radius: .35rem 0 0 .35rem; }
+.attendance-options button:last-child { border-radius: 0 .35rem .35rem 0; }
+.attendance-options button[aria-pressed="true"] { background: var(--selected); }
+.attendance-options button[aria-pressed="true"][data-status="ABSENT"] { background: var(--error-bg); color: var(--error); }
+.attendance-options button[aria-pressed="true"][data-status="PRESENT"] { background: #e3f4e8; color: #126b2f; }
+[data-theme="dark"] .attendance-options button[aria-pressed="true"][data-status="PRESENT"] { background: #1f3a28; color: #6fd08c; }
+.attendance-toast { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); z-index: 3; margin: 0; padding: .65rem 1rem; border: 1px solid var(--line); border-radius: .5rem; background: var(--card); color: var(--text); }
+
+.exam-list { list-style: none; padding: 0; display: grid; gap: .5rem; }
+.exam-list li { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; padding: .65rem; border: 1px solid var(--line); border-radius: .5rem; }
+.exam-list li > div { flex: 1 1 12rem; }
+.exam-date { display: grid; min-width: 4rem; text-align: center; padding: .35rem; border-radius: .35rem; background: #fdf0d8; color: #825000; font-size: .8rem; }
+.exam-date strong { font-size: 1.35rem; }
+[data-theme="dark"] .exam-date { background: #40320f; color: #f0b45a; }
+
+.room-grid { width: 100%; min-width: 42rem; border-collapse: collapse; text-align: left; }
+.room-grid th, .room-grid td { padding: .45rem; border-bottom: 1px solid var(--line); }
+.room-grid th small { display: block; color: var(--muted); }
+.room-slot { width: 100%; min-height: 3rem; background: var(--card); color: var(--text); border: 1px dashed var(--muted); }
+.room-slot[aria-pressed="true"] { background: #e3f4e8; border: 2px solid #1e8e3e; color: #126b2f; }
+.room-slot[data-state="booked"] { background: var(--selected); color: var(--heading); border: 1px solid var(--heading); opacity: 1; }
+.room-slot[data-state="unavailable"] { background: repeating-linear-gradient(135deg, var(--page), var(--page) 5px, var(--card) 5px, var(--card) 10px); }
+[data-theme="dark"] .room-slot[aria-pressed="true"] { background: #1f3a28; color: #6fd08c; }
