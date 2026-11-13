@@ -3,6 +3,7 @@ import AcademicsPage from './pages/AcademicsPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import CoursesPage from './pages/CoursesPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
+import ExamManagementPage from './pages/ExamManagementPage.jsx';
 import RoomSchedulingPage from './pages/RoomSchedulingPage.jsx';
 import TrainingPage from './pages/TrainingPage.jsx';
 import TuitionPage, { PaymentForm } from './pages/TuitionPage.jsx';
@@ -12,7 +13,7 @@ import { api } from './services/api.js';
 const menus = {
   STUDENT: ['Học viên', [['week', 'Thời khóa biểu'], ['courses', 'Đăng ký lớp'], ['study', 'Lớp của tôi'], ['tuition', 'Học phí']]],
   TEACHER: ['Giảng viên', [['week', 'Thời khóa biểu'], ['teach', 'Lớp giảng dạy']]],
-  TRAINING_STAFF: ['Đào tạo', [['week', 'Thời khóa biểu'], ['catalog', 'Danh mục đào tạo'], ['rooms', 'Xếp phòng']]],
+  TRAINING_STAFF: ['Đào tạo', [['week', 'Thời khóa biểu'], ['catalog', 'Danh mục đào tạo'], ['rooms', 'Xếp phòng'], ['exams', 'Lịch thi']]],
   ACCOUNTANT: ['Kế toán', [['payment', 'Ghi nhận học phí']]],
   ADMIN: ['Quản trị viên', [['admin', 'Tạo tài khoản']]],
 };
@@ -113,6 +114,7 @@ export default function App() {
         {page === 'teach' && <AcademicsPage key="teacher" teacher onError={onError} />}
         {page === 'payment' && <PaymentForm onError={onError} />}
         {page === 'admin' && <AdminPage onError={onError} />}
+        {page === 'exams' && <ExamManagementPage onError={onError} />}
         {page === 'rooms' && <RoomSchedulingPage onError={onError} />}
         {page === 'catalog' && <TrainingPage onError={onError} />}
         {user && !role && <p>Tài khoản chưa được cấp vai trò.</p>}

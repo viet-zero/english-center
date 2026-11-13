@@ -69,7 +69,8 @@ export default function AcademicsPage({ teacher, onError }) {
       <h3>Lịch thi và điểm thi</h3>
       {view.exams.length === 0 && <p>Chưa có lịch thi.</p>}
       <ul>{view.exams.map(exam => <li key={exam.id}>
-        {exam.title} · {formatTime(exam.starts_at)} – {formatTime(exam.ends_at)} · {exam.room}
+        {exam.title} · {formatTime(exam.starts_at)} – {formatTime(exam.ends_at)} · {exam.room} · {exam.exam_format === 'ONLINE' ? 'Trực tuyến' : 'Trực tiếp'}
+        {exam.invigilator && ' · Giám thị: ' + exam.invigilator}
         {!teacher && ' · Điểm: ' + (view.grades.find(grade => grade.exam_id === exam.id)?.score ?? 'Chưa có')}
       </li>)}</ul>
       <h3>Điểm danh</h3>

@@ -29,3 +29,5 @@ Với schema cũ, chạy `06-academics.sql` đúng một lần trước khi kh�
 Dùng `demo.teacher` để mở lớp được phân công, tạo lịch thi, điểm danh theo buổi và nhập điểm theo kỳ thi. Học viên thấy lịch thi và kết quả riêng trong mục Lớp của tôi. Phòng thi hiện là tên nhập trực tiếp và kiểm tra trùng giờ áp dụng trong cùng lớp.
 
 Chạy thêm `07-learning.sql` đúng một lần để tạo bảng tài liệu và bài nộp. Sau khi nạp `demo-seed.sql`, chạy `demo-learning.sql` để thêm một tài liệu và hai bài tập vào lớp DEMO-GT01. Tài khoản học viên cần đăng ký lớp này trước khi xem hoặc nộp bài. Trong màn hình lớp, giảng viên có thể đăng nội dung và xem bài nộp. Học viên nộp hoặc cập nhật bài làm dạng văn bản.
+
+Chạy thêm 08-exam-management.sql đúng một lần. Nhân viên đào tạo mở Lịch thi để cập nhật phòng, hình thức và giám thị của kỳ thi đã tạo.
