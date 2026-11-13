@@ -39,7 +39,7 @@ public class CreateUserService {
     // Pass the authenticated username from the server, never from the request body.
     @Transactional
     public CreatedUser createStudent(String actorUsername, @NotNull @Valid StudentRequest request) {
-        requireRole(actorUsername, "TRAINING_STAFF");
+        requireRole(actorUsername, "ADMIN");
         requireExistingRole("STUDENT");
 
         Account account = createUserAndAccount(request.account());

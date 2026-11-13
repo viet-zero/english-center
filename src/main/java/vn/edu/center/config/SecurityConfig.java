@@ -24,11 +24,13 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/", "/index.html", "/favicon.ico",
                         "/api/auth/csrf").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/users/students").hasRole("TRAINING_STAFF")
+                .requestMatchers(HttpMethod.POST, "/api/users/students").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/users/employees").hasRole("ADMIN")
                 .requestMatchers("/api/enrollments", "/api/enrollments/**").hasRole("STUDENT")
                 .requestMatchers(HttpMethod.POST, "/api/invoices/*/payments").hasRole("ACCOUNTANT")
                 .requestMatchers(HttpMethod.GET, "/api/invoices", "/api/invoices/**").hasRole("STUDENT")
+                .requestMatchers(HttpMethod.GET, "/api/catalog/**").hasRole("STUDENT")
+                .requestMatchers("/api/training/**").hasAnyRole("TRAINING_STAFF", "ADMIN")
                 .anyRequest().denyAll());
         http.requestCache(cache -> cache.disable());
         http.exceptionHandling(errors -> errors

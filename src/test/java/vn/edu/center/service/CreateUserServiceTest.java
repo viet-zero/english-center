@@ -39,7 +39,7 @@ class CreateUserServiceTest {
 
     @Test
     void createsStudentWithHashedPasswordAndStudentRole() {
-        var created = service.createStudent("trainer", new CreateUserService.StudentRequest(account, "HV01"));
+        var created = service.createStudent("admin", new CreateUserService.StudentRequest(account, "HV01"));
         var savedAccount = ArgumentCaptor.forClass(Account.class);
         var savedStudent = ArgumentCaptor.forClass(Student.class);
         verify(database).persist(savedAccount.capture());
@@ -48,7 +48,7 @@ class CreateUserServiceTest {
         assertEquals(created.userId(), savedStudent.getValue().getUserId());
         assertTrue(new BCryptPasswordEncoder().matches(account.password(),
                 savedAccount.getValue().getPasswordHash()));
-        verify(permission).setParameter("role", "TRAINING_STAFF");
+        verify(permission).setParameter("role", "ADMIN");
         verify(assignment).setParameter("accountId", created.accountId());
         verify(assignment).setParameter("role", "STUDENT");
     }
