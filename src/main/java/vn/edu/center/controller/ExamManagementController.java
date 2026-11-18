@@ -53,6 +53,10 @@ public class ExamManagementController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Transactional
     public void update(@PathVariable String examId, @Valid @RequestBody ExamDetails details) {
+        String classId=sql.queryForList("SELECT class_id FROM lich_thi WHERE id=?",String.class,examId)
+                .stream().findFirst().orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND));
+        var classroom=sql.queryForMap("SELECT finalized_at FROM lop_hoc WHERE id=? FOR UPDATE",classId);
+        if (classroom.get("finalized_at")!=null) throw new IllegalStateException("Lớp đã chốt kết quả.");
         if (sql.queryForList("SELECT id FROM lich_thi WHERE id = ? FOR UPDATE", String.class, examId).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy kỳ thi.");
         }

@@ -24,6 +24,10 @@ public class Classroom {
 
     private Integer maxStudents;
 
+    private java.time.LocalDateTime finalizedAt;
+
+    public java.time.LocalDateTime getFinalizedAt() { return finalizedAt; }
+
     private String status;
 
     public Classroom() {

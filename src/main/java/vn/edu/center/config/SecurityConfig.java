@@ -23,7 +23,7 @@ public class SecurityConfig {
         http.authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers(HttpMethod.GET, "/", "/index.html", "/favicon.ico",
-                        "/api/auth/csrf").permitAll()
+                        "/api/auth/csrf", "/api/certificates/verify/*").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
                 .requestMatchers(HttpMethod.PUT, "/api/auth/password").authenticated()
                 .requestMatchers("/api/admin/accounts", "/api/admin/accounts/**").hasRole("ADMIN")

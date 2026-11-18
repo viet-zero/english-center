@@ -39,6 +39,13 @@ const id = encodeURIComponent;
 const json = (path, data, method) => post(path, JSON.stringify(data), 'application/json', method);
 
 export const api = {
+  completionClasses: scope => request((scope === 'training' ? '/training' : '/academics/teacher') + '/completion/classes'),
+  completionClass: (scope, classId) => request((scope === 'training' ? '/training' : '/academics/teacher') + '/completion/classes/' + id(classId)),
+  completionPolicy: (classId, data) => json('/training/completion/classes/' + id(classId) + '/policy', data, 'PUT'),
+  finalizeClass: classId => json('/training/completion/classes/' + id(classId) + '/finalize', {}),
+  issueCertificate: (classId, enrollmentId) => json('/training/completion/classes/' + id(classId) + '/certificates/' + id(enrollmentId), {}),
+  completionResults: () => request('/academics/student/completion'),
+  certificates: () => request('/academics/student/certificates'),
   studentRequests: () => request('/academics/student/requests'),
   requestEnrollments: () => request('/academics/student/request-enrollments'),
   submitStudentRequest: data => json('/academics/student/requests', data),

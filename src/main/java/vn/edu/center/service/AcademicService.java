@@ -261,12 +261,13 @@ public class AcademicService {
     }
 
     private void requireTeacher(String teacher, String classId, boolean lock) {
-        String query = "SELECT id FROM lop_hoc WHERE id = ? AND teacher_id = ?";
-        if (sql.queryForList(lock ? query + " FOR UPDATE" : query, String.class, classId, teacher).isEmpty()) {
-            throw forbidden();
+        String query = "SELECT finalized_at FROM lop_hoc WHERE id = ? AND teacher_id = ?";
+        var matches=sql.queryForList(lock ? query+" FOR UPDATE" : query,classId,teacher);
+        if (matches.isEmpty()) throw forbidden();
+        if (lock && matches.getFirst().get("finalized_at")!=null) {
+            throw new IllegalStateException("Lớp đã chốt, không thể sửa điểm hoặc điểm danh.");
         }
     }
-
     private void requireEnrollment(String classId, String enrollmentId) {
         if (sql.queryForList("""
                 SELECT id FROM dang_ky_hoc_phan

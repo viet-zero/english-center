@@ -135,6 +135,7 @@ public class CourseService {
     @Transactional
     public Classroom updateClass(String classId, ClassDetails request) {
         Classroom classroom = classes.findLockedById(classId).orElseThrow(() -> notFound("Class"));
+        if (classroom.getFinalizedAt()!=null) throw new IllegalStateException("Lớp đã chốt kết quả.");
         if (enrollments.countOccupiedSeats(classId) > request.maxStudents()) {
             throw new IllegalStateException("Capacity cannot be lower than occupied seats");
         }

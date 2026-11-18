@@ -53,9 +53,10 @@ public class RoomSchedulingService {
     public String schedule(String classId, String roomId, LocalDate day, Shift shift, String employeeId) {
         // Serialize writes that share a class, teacher or room. Check conflicts after locking.
         Map<String, Object> classroom = sql.queryForList("""
-                SELECT teacher_id, max_students, start_date, end_date, status
+                SELECT teacher_id, max_students, start_date, end_date, status, finalized_at
                 FROM lop_hoc WHERE id = ? FOR UPDATE
                 """, classId).stream().findFirst().orElseThrow(() -> missing("Class"));
+        if (classroom.get("finalized_at")!=null) throw new IllegalStateException("Lớp đã chốt kết quả.");
         String teacherId = (String) classroom.get("teacher_id");
         sql.queryForList("SELECT id FROM nhan_vien WHERE id = ? FOR UPDATE", String.class, teacherId);
         Map<String, Object> room = sql.queryForList(
