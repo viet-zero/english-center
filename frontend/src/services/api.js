@@ -39,6 +39,10 @@ const id = encodeURIComponent;
 const json = (path, data, method) => post(path, JSON.stringify(data), 'application/json', method);
 
 export const api = {
+  cashShifts: () => request('/accounting/shifts'),
+  openCashShift: data => json('/accounting/shifts', data),
+  closeCashShift: (shiftId, data) => json('/accounting/shifts/' + id(shiftId) + '/close', data),
+  revenue: (from, to) => request('/accounting/revenue?from=' + id(from) + '&to=' + id(to)),
   completionClasses: scope => request((scope === 'training' ? '/training' : '/academics/teacher') + '/completion/classes'),
   completionClass: (scope, classId) => request((scope === 'training' ? '/training' : '/academics/teacher') + '/completion/classes/' + id(classId)),
   completionPolicy: (classId, data) => json('/training/completion/classes/' + id(classId) + '/policy', data, 'PUT'),

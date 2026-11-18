@@ -19,11 +19,13 @@ public class PaymentService {
     private final PaymentRepository payments;
 
     private final NotificationService notifications;
+    private final CashShiftService shifts;
 
-    public PaymentService(InvoiceRepository invoices, PaymentRepository payments, NotificationService notifications) {
+    public PaymentService(InvoiceRepository invoices, PaymentRepository payments, NotificationService notifications, CashShiftService shifts) {
         this.invoices = invoices;
         this.payments = payments;
         this.notifications = notifications;
+        this.shifts = shifts;
     }
 
     // employeeId must be derived from authentication; this operation records confirmed receipts.
@@ -62,6 +64,7 @@ public class PaymentService {
         }
         Payment payment = new Payment();
         payment.setId(UUID.randomUUID().toString());
+        payment.setShiftId(shifts.requireOpen(employeeId));
         payment.setInvoiceId(invoiceId);
         payment.setCollectedBy(employeeId);
         payment.setAmount(normalized);

@@ -13,6 +13,11 @@ public class Payment {
     @Id
     private String id;
 
+    private String shiftId;
+
+    public void setShiftId(String shiftId) { this.shiftId=shiftId; }
+    public String getShiftId() { return shiftId; }
+
     private String invoiceId;
 
     private String collectedBy;

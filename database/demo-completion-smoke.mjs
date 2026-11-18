@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { writeFile } from 'node:fs/promises';
 
 import assert from 'node:assert/strict';
@@ -58,6 +59,8 @@ await other.login('demo.student2','STUDENT');
 await teacher.login('demo.teacher','TEACHER');
 await training.login(process.env.DEMO_TRAINING_USERNAME ?? 'demo.training.mweokbew','TRAINING_STAFF');
 await accountant.login('demo.accountant','ACCOUNTANT');
+const shifts = ok(await accountant.request('/accounting/shifts'));
+if (!shifts.current.id) ok(await accountant.post('/accounting/shifts', {id:randomUUID(),openingCash:0}));
 async function put(client,path,data) {
   const csrf = await client.request('/auth/csrf');
   return client.request(path,{method:'PUT',headers:{[csrf.body.headerName]:csrf.body.token,'Content-Type':'application/json'},body:JSON.stringify(data)});

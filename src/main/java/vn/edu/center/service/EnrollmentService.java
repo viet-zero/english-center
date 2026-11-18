@@ -22,11 +22,12 @@ public class EnrollmentService {
     private final InvoiceRepository invoices;
     private final InvoiceItemRepository items;
     private final NotificationService notifications;
+    private final CashShiftService shifts;
 
     public EnrollmentService(StudentRepository students, ClassroomRepository classes,
             ModuleRepository modules, CourseRepository courses, EnrollmentRepository enrollments,
             InvoiceRepository invoices, InvoiceItemRepository items, JdbcTemplate sql,
-            NotificationService notifications) {
+            NotificationService notifications, CashShiftService shifts) {
         this.sql = sql;
         this.students = students;
         this.classes = classes;
@@ -36,6 +37,7 @@ public class EnrollmentService {
         this.invoices = invoices;
         this.items = items;
         this.notifications = notifications;
+        this.shifts = shifts;
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -193,6 +195,8 @@ public class EnrollmentService {
             if (!("demo-" + code).equals(order.get("link_id"))) {
                 throw new IllegalStateException("Chỉ ghi nhận hoàn tiền demo cho giao dịch demo.");
             }
+            String shiftId=shifts.requireOpen(employeeId);
+            sql.update("UPDATE bien_nhan_payos SET refund_shift_id=? WHERE reference=?",shiftId,reference);
             sql.update("UPDATE don_payos SET status = 'REFUNDED' WHERE order_code = ? AND status = 'REVIEW'", code);
             notifications.notifyStudent(studentId, "Đã ghi nhận hoàn tiền demo cho đơn " + code + ".");
         } else {

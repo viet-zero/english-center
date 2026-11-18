@@ -16,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class StudentRequestService {
     private final JdbcTemplate sql;
     private final NotificationService notifications;
+    private final CashShiftService shifts;
     private static final String REQUESTS = """
             SELECT r.id, r.enrollment_id AS enrollmentId, r.kind, r.reason, r.status,
                    r.created_at AS createdAt, r.review_note AS reviewNote, r.reviewed_by AS reviewedBy,
@@ -31,9 +32,10 @@ public class StudentRequestService {
             LEFT JOIN hoan_tien_demo f ON f.request_id = r.id
             """;
 
-    public StudentRequestService(JdbcTemplate sql, NotificationService notifications) {
+    public StudentRequestService(JdbcTemplate sql, NotificationService notifications, CashShiftService shifts) {
         this.sql = sql;
         this.notifications = notifications;
+        this.shifts = shifts;
     }
 
     public List<Map<String, Object>> studentRequests(String student) {
@@ -109,10 +111,15 @@ public class StudentRequestService {
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
-    public void refund(String id, String employee, String note) {
+    public void refund(String id, String employee, String note, String method) {
         var request = lockRequest(id);
         if (!"CANCEL".equals(request.get("kind"))) throw new IllegalStateException("Bảo lưu không phát sinh hoàn tiền.");
-        if ("REFUNDED".equals(request.get("status"))) return;
+        if (!java.util.Set.of("CASH","BANK_TRANSFER").contains(method)) throw new IllegalArgumentException("Phương thức không hợp lệ.");
+        if ("REFUNDED".equals(request.get("status"))) {
+            String previous=sql.queryForObject("SELECT method FROM hoan_tien_demo WHERE request_id=?",String.class,id);
+            if (!method.equals(previous)) throw new IllegalStateException("Khoản hoàn đã được ghi nhận bằng phương thức khác.");
+            return;
+        }
         if (!"APPROVED".equals(request.get("status"))) throw new IllegalStateException("Chỉ hoàn tiền sau khi đào tạo duyệt hủy.");
         var enrollment = sql.queryForMap("SELECT * FROM dang_ky_hoc_phan WHERE id = ?", request.get("enrollment_id"));
         if (!"CANCELLED".equals(enrollment.get("status"))) throw new IllegalStateException("Đăng ký chưa được hủy.");
@@ -130,8 +137,8 @@ public class StudentRequestService {
             throw new IllegalStateException("Khoản hoàn vượt số tiền thực thu còn lại.");
         }
         sql.update("""
-                INSERT INTO hoan_tien_demo(id,request_id,invoice_id,amount,employee_id,note) VALUES (?,?,?,?,?,?)
-                """, UUID.randomUUID().toString(), id, invoiceId, amount, employee, note.strip());
+                INSERT INTO hoan_tien_demo(id,request_id,invoice_id,amount,employee_id,note,shift_id,method) VALUES (?,?,?,?,?,?,?,?)
+                """, UUID.randomUUID().toString(), id, invoiceId, amount, employee, note.strip(),shifts.requireOpen(employee),method);
         sql.update("UPDATE yeu_cau_hoc_vien SET status='REFUNDED' WHERE id=?", id);
         notifications.notifyStudent((String) enrollment.get("student_id"), "Đã ghi nhận hoàn tiền demo "
                 + amount.toPlainString() + " ₫ cho yêu cầu " + id + ".");

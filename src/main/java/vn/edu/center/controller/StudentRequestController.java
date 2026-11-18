@@ -53,12 +53,13 @@ public class StudentRequestController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void refund(Principal principal, @PathVariable String id, @Valid @RequestBody Refund body) {
         if (!payments.isDemo()) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
-        requests.refund(id, users.employeeId(principal), body.note());
+        requests.refund(id, users.employeeId(principal), body.note(),body.method()==null ? "BANK_TRANSFER" : body.method());
     }
 
     public record Submission(@NotBlank @Size(max=36) String enrollmentId,
             @NotBlank @Pattern(regexp="CANCEL|HOLD") String kind,
             @NotBlank @Size(max=1000) String reason) {}
     public record Decision(@NotNull Boolean approved, @NotBlank @Size(max=1000) String note) {}
-    public record Refund(@NotBlank @Size(max=1000) String note) {}
+    public record Refund(@NotBlank @Size(max=1000) String note,
+            @Pattern(regexp="CASH|BANK_TRANSFER") String method) {}
 }

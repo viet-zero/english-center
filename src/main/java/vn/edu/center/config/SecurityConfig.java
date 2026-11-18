@@ -26,6 +26,7 @@ public class SecurityConfig {
                         "/api/auth/csrf", "/api/certificates/verify/*").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
                 .requestMatchers(HttpMethod.PUT, "/api/auth/password").authenticated()
+                .requestMatchers("/api/accounting/**").hasRole("ACCOUNTANT")
                 .requestMatchers("/api/admin/accounts", "/api/admin/accounts/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/users/students").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/users/employees").hasRole("ADMIN")

@@ -104,8 +104,12 @@ export default function StudentRequestsPage({ scope, onError }) {
         <form onSubmit={event => {
           event.preventDefault();
           const fields = new FormData(event.currentTarget);
-          run(() => api.refundStudentRequest(item.id, { note: fields.get('note') }), 'Đã ghi nhận hoàn tiền demo.');
+          run(() => api.refundStudentRequest(item.id, { note: fields.get('note'), method: fields.get('method') }), 'Đã ghi nhận hoàn tiền demo.');
         }}><fieldset disabled={busy || !demo}>
+          <p>Mở ca thu tiền trước khi ghi nhận khoản hoàn.</p>
+          <label>Phương thức hoàn tiền demo<select name="method">
+            <option value="BANK_TRANSFER">Chuyển khoản demo</option><option value="CASH">Tiền mặt demo</option>
+          </select></label>
           <label>Chứng từ hoặc ghi chú hoàn tiền demo<textarea name="note" required maxLength={1000} /></label>
           <button>Xác nhận hoàn tiền demo</button>
         </fieldset></form>

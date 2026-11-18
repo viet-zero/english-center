@@ -93,6 +93,7 @@ export function PaymentForm({ onError }) {
 
   return <section className="panel">
     <h2>Ghi nhận học phí</h2>
+    <p>Cần mở ca thu tiền trước khi ghi nhận thu hoặc hoàn tiền demo.</p>
     <h3>Đối soát và lịch sử giao dịch payOS</h3>
     {reviewLoading && <p>Đang tải giao dịch…</p>}
     {!reviewLoading && reviews.length === 0 && <p>Chưa có giao dịch cần đối soát.</p>}
