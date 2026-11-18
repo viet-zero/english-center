@@ -1,0 +1,1 @@
+ALTER TABLE tai_khoan ADD auth_version BIGINT NOT NULL DEFAULT 0;

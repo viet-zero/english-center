@@ -18,13 +18,15 @@ public class SecurityConfig {
     }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, vn.edu.center.service.AccountDetailsService accounts) throws Exception {
         http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/payments/payos/webhook"));
         http.authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers(HttpMethod.GET, "/", "/index.html", "/favicon.ico",
                         "/api/auth/csrf").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
+                .requestMatchers(HttpMethod.PUT, "/api/auth/password").authenticated()
+                .requestMatchers("/api/admin/accounts", "/api/admin/accounts/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/users/students").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/users/employees").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/payments/payos/webhook").permitAll()
@@ -39,6 +41,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/academics/student/**").hasRole("STUDENT")
                 .requestMatchers(HttpMethod.PUT, "/api/academics/student/notifications/*/read").hasRole("STUDENT")
                 .anyRequest().denyAll());
+        http.addFilterBefore(new AccountSessionFilter(accounts),
+                org.springframework.security.web.access.intercept.AuthorizationFilter.class);
         http.requestCache(cache -> cache.disable());
         http.exceptionHandling(errors -> errors
                 .authenticationEntryPoint((request, response, exception) ->

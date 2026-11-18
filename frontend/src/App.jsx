@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import NotificationBell from './components/NotificationBell.jsx';
 import AcademicsPage from './pages/AcademicsPage.jsx';
+import AccountsPage from './pages/AccountsPage.jsx';
+import PasswordPage from './pages/PasswordPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import CatalogAdmin from './pages/CatalogAdmin.jsx';
 import CoursesPage from './pages/CoursesPage.jsx';
@@ -17,7 +19,7 @@ const menus = {
   TEACHER: ['Giảng viên', [['week', 'Thời khóa biểu'], ['teach', 'Lớp giảng dạy']]],
   TRAINING_STAFF: ['Đào tạo', [['week', 'Thời khóa biểu'], ['catalog', 'Danh mục đào tạo'], ['rooms', 'Xếp phòng'], ['exams', 'Lịch thi']]],
   ACCOUNTANT: ['Kế toán', [['payment', 'Ghi nhận học phí']]],
-  ADMIN: ['Quản trị viên', [['admin', 'Tạo tài khoản'], ['admin-catalog', 'Quản lý khóa học']]],
+  ADMIN: ['Quản trị viên', [['accounts', 'Quản lý tài khoản'], ['admin', 'Tạo tài khoản'], ['admin-catalog', 'Quản lý khóa học']]],
 };
 const scopes = { STUDENT: 'student', TEACHER: 'teacher', TRAINING_STAFF: 'training' };
 
@@ -72,7 +74,7 @@ export default function App() {
 
   const roles = user?.roles.filter(role => menus[role]) ?? [];
   const role = roles.includes(selectedRole) ? selectedRole : roles[0];
-  const links = menus[role]?.[1] ?? [];
+  const links = role ? [...menus[role][1], ['password', 'Đổi mật khẩu']] : [];
   const page = links.some(([key]) => key === selectedPage) ? selectedPage : links[0]?.[0];
 
   return <>
@@ -113,6 +115,11 @@ export default function App() {
         {page === 'teach' && <AcademicsPage key="teacher" teacher onError={onError} />}
         {page === 'payment' && <PaymentForm onError={onError} />}
         {page === 'admin-catalog' && <CatalogAdmin onError={onError} />}
+        {page === 'accounts' && <AccountsPage onError={onError} />}
+        {page === 'password' && <PasswordPage onError={onError} onChanged={() => {
+          setUser(null); setInvoiceId(''); setSelectedRole(''); setSelectedPage('');
+          setError('Đã đổi mật khẩu. Vui lòng đăng nhập lại.');
+        }} />}
         {page === 'admin' && <AdminPage onError={onError} />}
         {page === 'exams' && <ExamManagementPage onError={onError} />}
         {page === 'rooms' && <RoomSchedulingPage onError={onError} />}

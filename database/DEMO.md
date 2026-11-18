@@ -57,3 +57,11 @@ Kiểm thử hai thanh toán demo đồng thời bằng node database/demo-payme
 Chạy 13-payment-review.sql một lần sau migration 12, trước khi chạy bản mới. Kế toán mở mục Đối soát và lịch sử giao dịch payOS, chọn chuyển sang lớp còn chỗ hoặc ghi nhận hoàn tiền demo, nhập ghi chú rồi xác nhận. Lớp nhận phải khác lớp gốc, cùng học phần và học phí bằng khoản đã nhận. Hệ thống kiểm tra lại sức chứa, điều kiện đăng ký và trùng lịch trong transaction. Ghi nhận hoàn tiền demo yêu cầu PAYOS_DEMO=true và đơn có link demo. Lịch sử lưu người xử lý, thời điểm, ghi chú, lớp nhận và hóa đơn. Đây là ghi nhận mô phỏng hoàn tiền, không thực hiện chuyển khoản ngân hàng.
 
 Bài test database/demo-review-smoke.mjs kiểm tra lại hai giao dịch đã xử lý trên MySQL demo. Đặt DEMO_PASSWORD, DEMO_TRANSFER_REFERENCE, DEMO_REFUND_REFERENCE và DEMO_TARGET_CLASS_ID theo dữ liệu đã thử trên web, rồi chạy node database/demo-review-smoke.mjs. Tài khoản demo.student2 phải là người sở hữu hóa đơn chuyển lớp. Test kiểm tra phân quyền, gửi lặp đồng thời, chặn đổi quyết định và công nợ hóa đơn bằng 0.
+
+## Quản lý tài khoản và đổi mật khẩu
+
+Chạy 14-account-management.sql một lần trước khi khởi động bản mới. Admin mở Quản lý tài khoản để tìm theo tên đăng nhập/họ tên, sửa họ tên, điện thoại, email, CCCD, trạng thái và vai trò. Vai trò phải khớp hồ sơ học viên/nhân viên đã tạo. Hệ thống giữ ít nhất một admin hoạt động và từ chối lưu phiên bản chỉnh sửa đã cũ.
+
+Cả năm vai trò có mục Đổi mật khẩu. Nhập mật khẩu hiện tại, mật khẩu mới và xác nhận. Mật khẩu mới có ít nhất 8 ký tự, chữ hoa, chữ thường, chữ số và tối đa 72 byte UTF-8. Đổi mật khẩu yêu cầu đăng nhập lại. Khóa tài khoản, đổi quyền hoặc lưu thông tin tài khoản làm phiên cũ hết hiệu lực khi gửi yêu cầu tiếp theo, kể cả sau khi tài khoản được mở lại. Phiên cũ từ bản ứng dụng trước cũng phải đăng nhập lại.
+
+Đặt DEMO_PASSWORD bằng mật khẩu tài khoản demo.admin rồi chạy node database/demo-account-smoke.mjs. Test tạo riêng tài khoản nhân viên QA, kiểm tra danh sách, sửa, quyền, khóa/mở, phiên đồng thời, đổi mật khẩu, bản sửa cũ, giữ admin cuối và dữ liệu không hợp lệ.

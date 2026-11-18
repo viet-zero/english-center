@@ -39,6 +39,9 @@ const id = encodeURIComponent;
 const json = (path, data, method) => post(path, JSON.stringify(data), 'application/json', method);
 
 export const api = {
+  accounts: () => request('/admin/accounts'),
+  updateAccount: (accountId, data) => json('/admin/accounts/' + id(accountId), data, 'PUT'),
+  changePassword: data => json('/auth/password', data, 'PUT'),
   learningContent: (scope, classId) => request('/academics/' + scope + '/classes/' + id(classId) + '/content'),
   publishLearningContent: (classId, data) => json('/academics/teacher/classes/' + id(classId) + '/content', data),
   submitAssignment: (classId, assignmentId, answer) => json(

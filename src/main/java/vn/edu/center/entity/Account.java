@@ -18,6 +18,11 @@ public class Account {
 
     private String passwordHash;
 
+    @jakarta.persistence.Column(name = "auth_version")
+    private long authVersion;
+
+    public long getAuthVersion() { return authVersion; }
+
     private String status;
 
     private LocalDateTime lastLogin;
