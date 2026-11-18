@@ -46,3 +46,6 @@ Chạy 11-seat-holds-attendance-alerts.sql một lần trước khi dùng bản 
 Chạy migration `12-payos.sql` một lần sau `11-seat-holds-attendance-alerts.sql`. Migration xóa dữ liệu giữ chỗ cũ và thêm bảng đơn, biên nhận payOS.
 
 Để dùng payOS thật, cấu hình `PAYOS_CLIENT_ID`, `PAYOS_API_KEY`, `PAYOS_CHECKSUM_KEY` và `PAYOS_RETURN_URL` trong môi trường backend. Đăng ký webhook HTTPS công khai tại đường dẫn `/api/payments/payos/webhook`. Trang quay về chỉ hiển thị trạng thái từ backend. Đơn được ghi danh sau khi webhook hợp lệ báo đúng số tiền. Nếu thiếu tiền hoặc lớp đã đầy, kế toán xem giao dịch trong **Giao dịch payOS cần đối soát** và xử lý khoản chuyển thủ công.
+## Nút thanh toán demo
+
+Đặt PAYOS_DEMO=true khi chạy Spring Boot. Chế độ này dùng MySQL demo và không cần key payOS. Học viên chọn khóa học, lớp, bấm Thanh toán rồi Thanh toán demo. Backend lấy số tiền từ đơn thuộc học viên đăng nhập và chạy cùng nghiệp vụ xác nhận thanh toán. Bấm lặp dùng cùng mã giao dịch để tránh thu hoặc ghi danh hai lần. Khi lớp đầy, kế toán xem danh sách đối soát. Khi PAYOS_DEMO=false, endpoint thanh toán demo trả 404.

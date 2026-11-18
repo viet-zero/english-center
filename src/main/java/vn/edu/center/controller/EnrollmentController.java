@@ -37,6 +37,21 @@ public class EnrollmentController {
         return enrollments.checkout(currentUser.studentId(principal), code);
     }
 
+    @GetMapping("/api/enrollments/payment-mode")
+    public Map<String, Boolean> paymentMode() {
+        return Map.of("demo", payOs.isDemo());
+    }
+
+    @PostMapping("/api/enrollments/checkout/{code}/demo-payment")
+    public EnrollmentService.Checkout demoPayment(Principal principal, @PathVariable long code) {
+        if (!payOs.isDemo()) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        String studentId = currentUser.studentId(principal);
+        var order = enrollments.checkout(studentId, code);
+        // The stable reference makes retries idempotent.
+        enrollments.settle(code, "demo-" + code, "DEMO-" + code, order.amount());
+        return enrollments.checkout(studentId, code);
+    }
+
     @GetMapping("/api/payments/payos/reviews")
     public List<Map<String, Object>> reviews() {
         return enrollments.paymentReviews();

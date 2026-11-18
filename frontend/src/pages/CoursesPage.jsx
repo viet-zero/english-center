@@ -3,6 +3,7 @@ import { api } from '../services/api.js';
 import { money } from './TuitionPage.jsx';
 
 export default function CoursesPage({ onInvoice, onError }) {
+  const [demo, setDemo] = useState(false);
   const [courses, setCourses] = useState([]);
   const [classes, setClasses] = useState([]);
   const [courseId, setCourseId] = useState('');
@@ -31,7 +32,9 @@ export default function CoursesPage({ onInvoice, onError }) {
 
   useEffect(() => {
     let active = true;
-    api.courses().then(items => { if (active) setCourses(items); })
+    Promise.all([api.courses(), api.paymentMode()]).then(([items, mode]) => {
+      if (active) { setCourses(items); setDemo(mode.demo); }
+    })
       .catch(error => { if (active) onError(error); })
       .finally(() => { if (active) setBusy(false); });
     return () => { active = false; };
@@ -78,13 +81,18 @@ export default function CoursesPage({ onInvoice, onError }) {
       </select></label>
     </div>
     {order && <article aria-live="polite">
-      <h3>Đơn payOS {order.orderCode}</h3>
+      <h3>{demo ? "Đơn thanh toán demo" : "Đơn payOS"} {order.orderCode}</h3>
       <p>Học phí {money(order.amount)}</p>
       {order.status === 'PENDING' && <>
         <p>Đang chờ xác nhận đủ tiền. Chỗ trống được kiểm tra khi tiền về.</p>
         {order.checkoutUrl
           ? <a href={order.checkoutUrl} target="_blank" rel="noreferrer">Mở mã QR payOS</a>
-          : <p>Đơn thanh toán demo đang chờ webhook giả lập.</p>}
+          : demo && <>
+            <p>Thanh toán giả lập cho đồ án.</p>
+            <button disabled={busy} onClick={() => load(async () => {
+              setOrder(await api.demoPayment(order.orderCode));
+            })}>Thanh toán demo</button>
+          </>}
       </>}
       {order.status === 'ENROLLED' && <>
         <p>Đã thanh toán đủ và đăng ký lớp thành công.</p>
@@ -105,7 +113,7 @@ export default function CoursesPage({ onInvoice, onError }) {
         </li>)}
       </ul></details> : <p>Chưa có lịch học.</p>}
       <button disabled={busy || item.remainingSeats <= 0}
-        onClick={() => payForClass(item.id)}>Tạo mã QR payOS</button>
+        onClick={() => payForClass(item.id)}>{demo ? "Thanh toán" : "Tạo mã QR payOS"}</button>
     </article>)}</div>
   </section>;
 }

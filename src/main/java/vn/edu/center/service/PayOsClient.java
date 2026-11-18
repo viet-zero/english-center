@@ -41,10 +41,10 @@ public class PayOsClient {
     }
 
     public Link create(long order, int amount) {
-        if (secret.isBlank() || (!demo && returnUrl.isBlank())) {
+        if (demo) return new Link("demo-" + order, null);
+        if (secret.isBlank() || returnUrl.isBlank()) {
             throw new IllegalStateException("Thanh toán payOS chưa được cấu hình.");
         }
-        if (demo) return new Link("demo-" + order, null);
         var body = new TreeMap<String, Object>(Map.of(
                 "amount", amount, "orderCode", order, "description", "HP " + order,
                 "returnUrl", returnUrl, "cancelUrl", returnUrl));
@@ -64,6 +64,8 @@ public class PayOsClient {
         }
         throw new IllegalStateException("Chưa tạo được mã QR payOS. Vui lòng thử lại.");
     }
+
+    public boolean isDemo() { return demo; }
 
     public boolean verify(Map<String, Object> data, String signature) {
         if (secret.isBlank() || data == null || signature == null || !signature.matches("[0-9a-fA-F]{64}")) {
