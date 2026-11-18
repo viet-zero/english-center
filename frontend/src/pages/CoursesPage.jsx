@@ -91,6 +91,12 @@ export default function CoursesPage({ onInvoice, onError }) {
             <p>Thanh toán giả lập cho đồ án.</p>
             <button disabled={busy} onClick={() => load(async () => {
               setOrder(await api.demoPayment(order.orderCode));
+              if (courseId) {
+                const modules = await api.modules(courseId);
+                const groups = await Promise.all(modules.map(async module =>
+                  (await api.classes(module.id)).map(item => ({ ...item, moduleName: module.name }))));
+                setClasses(groups.flat());
+              }
             })}>Thanh toán demo</button>
           </>}
       </>}
