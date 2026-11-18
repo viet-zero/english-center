@@ -123,3 +123,15 @@ Bấm Quên mật khẩu ở màn hình đăng nhập và nhập email. Phản h
 Email giả lập lưu liên kết trong demo_email_outbox và chỉ admin đọc được khi chế độ demo bật. AUTH_EMAIL_DEMO=false tắt hộp thư và việc tạo email giả lập. Gửi email SMTP thật chưa được cấu hình. Liên kết email được đọc vào bộ nhớ giao diện rồi xóa khỏi thanh địa chỉ. Các API khôi phục công khai vẫn yêu cầu CSRF.
 
 Chạy node database/demo-password-recovery.mjs với DEMO_PASSWORD và DEMO_DB_PASSWORD. Test dùng tài khoản QA mới, email tên miền example.test, kiểm tra ngưỡng 5 lần, reset bộ đếm, nhiều phiên, email không tiết lộ tồn tại tài khoản, token thay thế/hết hạn/dùng lại, đặt lại đồng thời, khóa bởi admin, quyền hộp thư và CSRF. DEMO_DB_PASSWORD chỉ dùng để mô phỏng hết hạn trực tiếp trong english_center_demo cho tài khoản demo.recovery vừa tạo. Có thể đặt MYSQL_EXE nếu MySQL nằm ở vị trí khác. Không cần chờ thực tế 5 phút.
+
+## Mã giảm giá đăng ký lớp
+
+Chạy migration 20-discount-codes.sql sau migration 19. Admin mở Mã giảm giá để tạo mã theo số tiền VND cho một khóa học, thời gian bắt đầu/hết hạn, tổng lượt tối đa và trạng thái. Mặc định giao diện là một lượt; mỗi học viên dùng cùng mã tối đa một lần. Admin điều chỉnh thời gian, giới hạn lượt và bật/tắt mã. Mã, khóa học và mức giảm được cố định khi tạo.
+
+Học viên chọn khóa/lớp và nhập mã trước khi tạo đơn. Backend kiểm tra khóa áp dụng, thời hạn, trạng thái, lượt dùng và số tiền giảm không vượt học phí. Đơn lưu học phí gốc, giảm giá và số tiền sau giảm. QR SePay dùng số tiền sau giảm. Hóa đơn và chi tiết hóa đơn lưu học phí gốc cùng khoản giảm để đối soát.
+
+Tạo đơn không giữ lượt mã và không đánh dấu đã dùng. Khi nhận đủ tiền, hệ thống kiểm tra lại mã và sĩ số trong transaction, sau đó ghi danh, tạo hóa đơn và ghi lượt dùng cùng nhau. Khóa dòng mã và ràng buộc UNIQUE ngăn vượt tổng lượt hoặc dùng lặp cho một học viên. Nếu mã hết hạn/hết lượt lúc tiền về, lớp đầy hoặc số tiền không đúng, giao dịch chờ kế toán đối soát và mã chưa được dùng. Chuyển sang lớp còn chỗ cùng học phần vẫn áp dụng giá của đơn và kiểm tra lại mã; mã được dùng khi chuyển lớp thành công. Hoàn tiền một giao dịch chưa ghi danh không dùng mã. Mã đã dùng cho đăng ký thành công vẫn có lịch sử lượt dùng khi học viên hủy lớp sau đó.
+
+Nếu mã giảm toàn bộ học phí, đơn có số tiền 0 và học viên bấm Xác nhận học phí 0 ₫. Backend kiểm tra lại điều kiện rồi ghi danh/hóa đơn PAID 0 đồng và dùng mã trong cùng transaction. Đơn 0 đồng không tạo giao dịch ngân hàng giả. Đơn thu tiền thông thường vẫn cần SePay xác nhận đủ tiền.
+
+Đặt DEMO_PASSWORD và SEPAY_WEBHOOK_API_KEY rồi chạy node database/demo-coupons.mjs với SEPAY_DEMO=true và cùng key webhook giả lập trên backend. Bài test tự tạo danh mục/mã riêng bằng API admin, kiểm tra hạn dùng, khóa học, quyền, báo giá phía server, thanh toán sai, webhook lặp, hai lớp tranh lượt cuối, mã hết hạn trong khi chờ tiền, chuyển lớp/hoàn tiền và mã giảm toàn phần. CouponServiceTest kiểm tra không dùng lại mã cho cùng học viên khi tổng lượt còn trống.

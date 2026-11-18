@@ -31,7 +31,7 @@ public class EnrollmentController {
     @PostMapping("/api/enrollments/checkout")
     public EnrollmentService.Checkout checkout(Principal principal, @Valid @RequestBody EnrollmentRequest request) {
         String studentId = currentUser.studentId(principal);
-        var order = enrollments.openCheckout(studentId, request.classId());
+        var order = enrollments.openCheckout(studentId, request.classId(),request.couponCode());
 
         return enrollments.checkout(studentId, order.orderCode());
     }
@@ -39,6 +39,11 @@ public class EnrollmentController {
     @GetMapping("/api/enrollments/checkout/{code}")
     public EnrollmentService.Checkout checkout(Principal principal, @PathVariable long code) {
         return enrollments.checkout(currentUser.studentId(principal), code);
+    }
+
+    @PostMapping("/api/enrollments/checkout/{code}/confirm-free")
+    public EnrollmentService.Checkout confirmFree(Principal principal,@PathVariable long code) {
+        return enrollments.confirmFree(currentUser.studentId(principal),code);
     }
 
     @GetMapping("/api/enrollments/payment-mode")
@@ -54,6 +59,7 @@ public class EnrollmentController {
         // The stable reference makes retries idempotent.
         if (!"SEPAY".equals(order.provider())) throw new ResponseStatusException(HttpStatus.CONFLICT,"Hãy tạo đơn SePay mới.");
         if (!"PENDING".equals(order.status())) return order;
+        if (order.amount()==0) return enrollments.confirmFree(studentId,code);
         webhooks.accept(new SePayWebhookService.Event(code,order.receivingAccount(),
                 "in",java.math.BigDecimal.valueOf(order.amount()),order.paymentCode(),order.paymentCode(),"DEMO-"+code));
         return enrollments.checkout(studentId, code);

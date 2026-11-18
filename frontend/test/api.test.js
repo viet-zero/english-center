@@ -110,3 +110,15 @@ test('forgot and reset password send data in CSRF-protected POST bodies', async 
   await api.forgotPassword(email);
   await api.resetPassword(data);
 });
+test('checkout coupon is sent as a code and the server supplies discounted pricing', async t => {
+  mockApi(t, [
+    csrf('coupon'),
+    { path: '/enrollments/checkout', method: 'POST', body: { orderCode: 456, amount: 8000, discountAmount: 2000 }, check: options => {
+      assert.deepEqual(JSON.parse(options.body), { classId: 'class', couponCode: 'SAVE' });
+      assert.equal(options.headers['X-CSRF-TOKEN'], 'coupon');
+    } },
+  ]);
+  const order = await api.openCheckout('class', ' SAVE ');
+  assert.equal(order.amount, 8000);
+  assert.equal(order.discountAmount, 2000);
+});

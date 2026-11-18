@@ -7,6 +7,7 @@ export default function CoursesPage({ onInvoice, onError }) {
   const [courses, setCourses] = useState([]);
   const [classes, setClasses] = useState([]);
   const [courseId, setCourseId] = useState('');
+  const [couponCode, setCouponCode] = useState('');
   const [order, setOrder] = useState(null);
   useEffect(() => {
     if (!['PENDING', 'REVIEW'].includes(order?.status)) return;
@@ -55,6 +56,7 @@ export default function CoursesPage({ onInvoice, onError }) {
   function chooseCourse(event) {
     const value = event.target.value;
     setCourseId(value);
+    setCouponCode('');
     setClasses([]);
     if (value) load(async () => {
       const modules = await api.modules(value);
@@ -66,7 +68,7 @@ export default function CoursesPage({ onInvoice, onError }) {
 
   function payForClass(classId) {
     load(async () => {
-      const checkout = await api.openCheckout(classId);
+      const checkout = await api.openCheckout(classId, couponCode);
       sessionStorage.setItem('english-center.payment', checkout.orderCode);
       setOrder(checkout);
     });
@@ -80,12 +82,17 @@ export default function CoursesPage({ onInvoice, onError }) {
         {courses.map(course => <option key={course.id} value={course.id}>{course.name}</option>)}
       </select></label>
     </div>
+    {courseId && <label>Mã giảm giá (không bắt buộc)<input value={couponCode} disabled={busy} maxLength={30} onChange={event => setCouponCode(event.target.value)} /></label>}
     {order && <article aria-live="polite">
       <h3>{demo ? "Đơn thanh toán demo" : "Đơn SePay"} {order.orderCode}</h3>
-      <p>Học phí {money(order.amount)}</p>
+      <p>Học phí gốc {money(order.tuitionAmount ?? order.amount)} · Giảm {money(order.discountAmount ?? 0)}</p>
+      {order.couponCode && <p>Mã áp dụng <strong>{order.couponCode}</strong></p>}
+      <p>Cần thanh toán <strong>{money(order.amount)}</strong></p>
       {order.status === 'PENDING' && <>
         <p>Đang chờ xác nhận đủ tiền. Chỗ trống được kiểm tra khi tiền về.</p>
-        {order.qrUrl
+        {order.amount === 0 ? <button disabled={busy} onClick={() => load(async () => {
+          setOrder(await api.confirmFree(order.orderCode));
+        })}>Xác nhận học phí 0 ₫</button> : order.qrUrl
           ? <div>
             <img src={order.qrUrl} alt={'QR chuyển khoản SePay cho đơn ' + order.paymentCode}
               style={{ width: 'min(100%, 320px)', height: 'auto' }} referrerPolicy="no-referrer" />

@@ -40,6 +40,8 @@ export default function TuitionPage({ invoiceId, onInvoice, onError }) {
       <button disabled={busy}>{busy ? 'Đang tải…' : 'Tra cứu'}</button>
     </form>
     {invoice && <><p>Mã hóa đơn: <strong>{invoice.invoiceCode}</strong></p><dl className="totals">
+      <div><dt>Học phí gốc</dt><dd>{money(invoice.tuitionAmount ?? invoice.totalDue)}</dd></div>
+      <div><dt>Giảm giá</dt><dd>{money(invoice.discount ?? 0)} {invoice.couponCode && <>· {invoice.couponCode}</>}</dd></div>
       <div><dt>Phải thu</dt><dd>{money(invoice.totalDue)}</dd></div>
       <div><dt>Đã thu</dt><dd>{money(invoice.totalPaid)}</dd></div>
       <div><dt>Đã hoàn tiền demo</dt><dd>{money(invoice.refundedAmount ?? 0)}</dd></div>

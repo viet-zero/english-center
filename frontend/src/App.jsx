@@ -8,6 +8,7 @@ import CashShiftPage from './pages/CashShiftPage.jsx';
 import RevenuePage from './pages/RevenuePage.jsx';
 import PasswordRecoveryPage from './pages/PasswordRecoveryPage.jsx';
 import DemoEmailPage from './pages/DemoEmailPage.jsx';
+import CouponsPage from './pages/CouponsPage.jsx';
 import PasswordPage from './pages/PasswordPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import CatalogAdmin from './pages/CatalogAdmin.jsx';
@@ -25,7 +26,7 @@ const menus = {
   TEACHER: ['Giảng viên', [['week', 'Thời khóa biểu'], ['teach', 'Lớp giảng dạy'], ['results', 'Điểm tổng kết']]],
   TRAINING_STAFF: ['Đào tạo', [['week', 'Thời khóa biểu'], ['catalog', 'Danh mục đào tạo'], ['rooms', 'Xếp phòng'], ['exams', 'Lịch thi'], ['requests', 'Duyệt yêu cầu học viên'], ['results', 'Chốt kết quả cuối khóa']]],
   ACCOUNTANT: ['Kế toán', [['shifts', 'Ca thu tiền'], ['payment', 'Ghi nhận học phí'], ['revenue', 'Báo cáo doanh thu'], ['requests', 'Hoàn tiền yêu cầu hủy']]],
-  ADMIN: ['Quản trị viên', [['accounts', 'Quản lý tài khoản'], ['admin', 'Tạo tài khoản'], ['email-demo', 'Email khôi phục demo'], ['admin-catalog', 'Quản lý khóa học']]],
+  ADMIN: ['Quản trị viên', [['accounts', 'Quản lý tài khoản'], ['admin', 'Tạo tài khoản'], ['email-demo', 'Email khôi phục demo'], ['admin-catalog', 'Quản lý khóa học'], ['coupons', 'Mã giảm giá']]],
 };
 const scopes = { STUDENT: 'student', TEACHER: 'teacher', TRAINING_STAFF: 'training' };
 
@@ -150,6 +151,7 @@ export default function App() {
         {page === 'teach' && <AcademicsPage key="teacher" teacher onError={onError} />}
         {page === 'payment' && <PaymentForm onError={onError} />}
         {page === 'admin-catalog' && <CatalogAdmin onError={onError} />}
+        {page === 'coupons' && <CouponsPage onError={onError} />}
         {page === 'email-demo' && <DemoEmailPage onError={onError} />}
         {page === 'shifts' && <CashShiftPage onError={onError} />}
         {page === 'revenue' && <RevenuePage onError={onError} />}

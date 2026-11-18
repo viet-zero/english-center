@@ -32,7 +32,9 @@ public class InvoiceService {
                         SELECT COALESCE(SUM(r.remaining_value),0) FROM yeu_cau_hoc_vien r
                         JOIN chi_tiet_hoa_don d ON d.enrollment_id=r.enrollment_id
                         WHERE d.invoice_id=? AND r.kind='HOLD' AND r.status='APPROVED'
-                        """, BigDecimal.class, invoice.getId()));
+                        """, BigDecimal.class, invoice.getId()),
+                invoice.getTotalDue().add(invoice.getDiscount()),invoice.getDiscount(),
+                invoice.getVoucherId()==null ? null : sql.queryForObject("SELECT code FROM ma_giam_gia WHERE id=?",String.class,invoice.getVoucherId()));
     }
 
     public String resolveId(String reference) {
@@ -40,5 +42,5 @@ public class InvoiceService {
     }
 
     public record InvoiceResponse(String id, String invoiceCode, LocalDateTime createdAt, BigDecimal totalDue,
-            BigDecimal totalPaid, BigDecimal remainingAmount, String status, BigDecimal refundedAmount, BigDecimal reservedAmount) {}
+            BigDecimal totalPaid, BigDecimal remainingAmount, String status, BigDecimal refundedAmount, BigDecimal reservedAmount, BigDecimal tuitionAmount, BigDecimal discount, String couponCode) {}
 }

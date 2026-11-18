@@ -39,6 +39,10 @@ const id = encodeURIComponent;
 const json = (path, data, method) => post(path, JSON.stringify(data), 'application/json', method);
 
 export const api = {
+  coupons: () => request('/admin/discounts'),
+  createCoupon: data => json('/admin/discounts', data),
+  updateCoupon: (couponId, data) => json('/admin/discounts/' + id(couponId), data, 'PUT'),
+  confirmFree: code => json('/enrollments/checkout/' + id(code) + '/confirm-free', {}),
   forgotPassword: email => json('/auth/password/forgot', { email }),
   resetPassword: data => json('/auth/password/reset', data),
   passwordResetEmails: () => request('/admin/password-reset-emails'),
@@ -113,7 +117,7 @@ export const api = {
   classes: moduleId => request('/catalog/modules/' + id(moduleId) + '/classes'),
   paymentMode: () => request('/enrollments/payment-mode'),
   demoPayment: code => json('/enrollments/checkout/' + id(code) + '/demo-payment', {}),
-  openCheckout: classId => json('/enrollments/checkout', { classId }),
+  openCheckout: (classId, couponCode) => json('/enrollments/checkout', { classId, couponCode: couponCode?.trim() || undefined }),
   checkoutStatus: orderCode => request('/enrollments/checkout/' + id(orderCode)),
   reviewClasses: reference => request('/payments/reviews/' + id(reference) + '/classes'),
   resolveReview: (reference, data) => json('/payments/reviews/' + id(reference) + '/resolve', data),
