@@ -75,7 +75,9 @@ public class EnrollmentService {
     public java.util.List<java.util.Map<String, Object>> paymentReviews() {
         return sql.queryForList("""
                 SELECT r.order_code AS orderCode, r.reference, r.amount AS receivedAmount,
-                       o.amount AS expectedAmount, r.reason, o.student_id AS studentId,
+                       o.amount AS expectedAmount, r.reason, r.resolution, r.resolved_by AS resolvedBy, r.resolution_note AS resolutionNote, r.resolved_at AS resolvedAt,
+                       r.target_class_id AS targetClassId, r.resolved_invoice_id AS resolvedInvoiceId,
+                       o.student_id AS studentId,
                        c.class_code AS classCode, r.received_at AS receivedAt
                 FROM bien_nhan_payos r JOIN don_payos o ON o.order_code = r.order_code
                 JOIN lop_hoc c ON c.id = o.class_id
@@ -132,6 +134,75 @@ public class EnrollmentService {
         }
     }
 
+    public java.util.List<java.util.Map<String, Object>> reviewClasses(String reference) {
+        return sql.queryForList("""
+                SELECT c.id, c.class_code AS classCode,
+                       c.max_students - (SELECT COUNT(*) FROM dang_ky_hoc_phan e
+                         WHERE e.class_id = c.id AND e.status IN ('CONFIRMED', 'COMPLETED')) AS remainingSeats
+                FROM bien_nhan_payos r JOIN don_payos o ON o.order_code = r.order_code
+                JOIN lop_hoc original ON original.id = o.class_id
+                JOIN lop_hoc c ON c.module_id = original.module_id
+                WHERE r.reference = ? AND r.reason IS NOT NULL AND r.resolution IS NULL
+                  AND c.status = 'OPEN' AND c.id <> original.id
+                HAVING remainingSeats > 0 ORDER BY c.class_code
+                """, reference);
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void resolveReview(String reference, String employeeId, String action, String targetId, String note) {
+        if ("TRANSFER".equals(action) && (targetId == null || targetId.isBlank())) {
+            throw new IllegalArgumentException("Hãy chọn lớp nhận.");
+        }
+        Long code = sql.query("SELECT order_code FROM bien_nhan_payos WHERE reference = ?",
+                (row, index) -> row.getLong(1), reference).stream().findFirst().orElseThrow(() ->
+                new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND));
+        var order = sql.queryForMap("SELECT * FROM don_payos WHERE order_code = ? FOR UPDATE", code);
+        var receipt = sql.queryForMap("SELECT * FROM bien_nhan_payos WHERE reference = ? FOR UPDATE", reference);
+        if (receipt.get("reason") == null) throw new IllegalStateException("Giao dịch không cần đối soát.");
+        if (receipt.get("resolution") != null) {
+            if (action.equals(receipt.get("resolution"))
+                    && (!"TRANSFER".equals(action) || java.util.Objects.equals(targetId, receipt.get("target_class_id")))) return;
+            throw new IllegalStateException("Giao dịch đã được xử lý.");
+        }
+        String studentId = (String) order.get("student_id");
+        String invoiceId = null;
+        if ("TRANSFER".equals(action)) {
+            if (!"REVIEW".equals(order.get("status")) || order.get("invoice_id") != null) {
+                throw new IllegalStateException("Đơn đã có kết quả xử lý, hãy đối soát hoàn tiền.");
+            }
+            Student student = students.findLockedById(studentId).orElseThrow();
+            Classroom target = classes.findLockedById(targetId).orElseThrow(() ->
+                    new IllegalArgumentException("Không tìm thấy lớp nhận."));
+            Classroom original = classes.findById((String) order.get("class_id")).orElseThrow();
+            if (target.getId().equals(original.getId()) || !target.getModuleId().equals(original.getModuleId())) {
+                throw new IllegalStateException("Chọn lớp khác cùng học phần của khóa học.");
+            }
+            BigDecimal received = new BigDecimal(receipt.get("amount").toString());
+            if (received.compareTo(modules.findById(target.getModuleId()).orElseThrow().getTuition()) != 0) {
+                throw new IllegalStateException("Khoản đã nhận phải bằng học phí lớp nhận.");
+            }
+            verifyAvailable(student, target);
+            invoiceId = createRegistration(studentId, targetId, received);
+            sql.update("""
+                    INSERT INTO giao_dich(id, invoice_id, collected_by, amount, paid_at, method, reference_code, status)
+                    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, 'BANK_TRANSFER', ?, 'SUCCESS')
+                    """, UUID.randomUUID().toString(), invoiceId, employeeId, received, reference);
+            sql.update("UPDATE don_payos SET status = 'ENROLLED', invoice_id = ? WHERE order_code = ?", invoiceId, code);
+            notifications.notifyStudent(studentId, "Kế toán đã chuyển khoản thanh toán sang lớp " + target.getClassCode() + ".");
+        } else if ("REFUND_DEMO".equals(action)) {
+            if (!("demo-" + code).equals(order.get("link_id"))) {
+                throw new IllegalStateException("Chỉ ghi nhận hoàn tiền demo cho giao dịch demo.");
+            }
+            sql.update("UPDATE don_payos SET status = 'REFUNDED' WHERE order_code = ? AND status = 'REVIEW'", code);
+            notifications.notifyStudent(studentId, "Đã ghi nhận hoàn tiền demo cho đơn " + code + ".");
+        } else {
+            throw new IllegalArgumentException("Thao tác không hợp lệ.");
+        }
+        sql.update("""
+                UPDATE bien_nhan_payos SET resolution = ?, resolved_by = ?, resolved_at = CURRENT_TIMESTAMP,
+                target_class_id = ?, resolved_invoice_id = ?, resolution_note = ? WHERE reference = ?
+                """, action, employeeId, "TRANSFER".equals(action) ? targetId : null, invoiceId, note, reference);
+    }
     public record Checkout(long orderCode, int amount, String status, String checkoutUrl, String invoiceId) {}
     private record Order(String studentId, String classId, int amount, String linkId, String status) {}
 

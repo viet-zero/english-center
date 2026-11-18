@@ -28,7 +28,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/users/students").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/users/employees").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/payments/payos/webhook").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/payments/payos/reviews").hasRole("ACCOUNTANT")
+                .requestMatchers("/api/payments/payos/reviews", "/api/payments/payos/reviews/**").hasRole("ACCOUNTANT")
                 .requestMatchers("/api/enrollments", "/api/enrollments/**").hasRole("STUDENT")
                 .requestMatchers(HttpMethod.POST, "/api/invoices/*/payments").hasRole("ACCOUNTANT")
                 .requestMatchers(HttpMethod.GET, "/api/invoices", "/api/invoices/**").hasRole("STUDENT")

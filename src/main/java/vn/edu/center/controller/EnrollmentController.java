@@ -57,6 +57,26 @@ public class EnrollmentController {
         return enrollments.paymentReviews();
     }
 
+    @GetMapping("/api/payments/payos/reviews/{reference}/classes")
+    public List<Map<String, Object>> reviewClasses(@PathVariable String reference) {
+        return enrollments.reviewClasses(reference);
+    }
+
+    @PostMapping("/api/payments/payos/reviews/{reference}/resolve")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resolve(Principal principal, @PathVariable String reference, @Valid @RequestBody Resolution request) {
+        if ("REFUND_DEMO".equals(request.action()) && !payOs.isDemo()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        enrollments.resolveReview(reference, currentUser.employeeId(principal),
+                request.action(), request.targetClassId(), request.note());
+    }
+
+    public record Resolution(
+            @jakarta.validation.constraints.NotBlank String action,
+            String targetClassId,
+            @jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max = 255) String note) {}
+
     @PostMapping("/api/payments/payos/webhook")
     public Map<String, Boolean> webhook(@RequestBody Webhook event) {
         var data = event.data();

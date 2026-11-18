@@ -9,7 +9,7 @@ export default function CoursesPage({ onInvoice, onError }) {
   const [courseId, setCourseId] = useState('');
   const [order, setOrder] = useState(null);
   useEffect(() => {
-    if (order?.status !== 'PENDING') return;
+    if (!['PENDING', 'REVIEW'].includes(order?.status)) return;
     let active = true;
     const timer = setInterval(() => {
       api.checkoutStatus(order.orderCode).then(result => {
@@ -104,6 +104,7 @@ export default function CoursesPage({ onInvoice, onError }) {
         <p>Đã thanh toán đủ và đăng ký lớp thành công.</p>
         <button onClick={() => onInvoice(order.invoiceId)}>Xem hóa đơn</button>
       </>}
+      {order.status === 'REFUNDED' && <p>Đã ghi nhận hoàn tiền demo.</p>}
       {order.status === 'REVIEW' && <p>Kế toán đang đối soát khoản chuyển này. Lớp chưa được ghi danh.</p>}
     </article>}
     {busy && <p role="status">Đang xử lý…</p>}

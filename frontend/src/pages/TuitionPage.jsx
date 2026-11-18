@@ -91,13 +91,14 @@ export function PaymentForm({ onError }) {
 
   return <section className="panel">
     <h2>Ghi nhận học phí</h2>
-    <h3>Giao dịch payOS cần đối soát</h3>
+    <h3>Đối soát và lịch sử giao dịch payOS</h3>
     {reviewLoading && <p>Đang tải giao dịch…</p>}
     {!reviewLoading && reviews.length === 0 && <p>Chưa có giao dịch cần đối soát.</p>}
     <ul>{reviews.map(item => <li key={item.reference}>
       Đơn {item.orderCode} · Lớp {item.classCode} · Học viên {item.studentId} ·
       Nhận {money(item.receivedAmount)} / {money(item.expectedAmount)} ·
       Mã giao dịch {item.reference} · {item.reason}
+      <ReviewActions item={item} onError={onError} onResolved={async () => setReviews(await api.paymentReviews())} />
     </li>)}</ul>
     <form onSubmit={submit}>
       <fieldset disabled={busy}>
@@ -112,4 +113,56 @@ export function PaymentForm({ onError }) {
     </form>
     {receipt && <p role="status">Đã ghi nhận {money(receipt.amount)} · Mã tham chiếu {receipt.referenceCode}</p>}
   </section>;
+}
+
+function ReviewActions({ item, onError, onResolved }) {
+  const [classes, setClasses] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [action, setAction] = useState('TRANSFER');
+
+  useEffect(() => {
+    if (item.resolution) return;
+    let active = true;
+    api.reviewClasses(item.reference).then(items => { if (active) setClasses(items); })
+      .catch(error => { if (active) onError(error); });
+    return () => { active = false; };
+  }, [item.reference, item.resolution, onError]);
+
+  if (item.resolution) return <p role="status">
+    {item.resolution === 'TRANSFER' ? 'Đã chuyển lớp' : 'Đã ghi nhận hoàn tiền demo'}
+    {' · '}{item.resolutionNote} · Người xử lý {item.resolvedBy}
+    {item.resolvedAt && <> · {new Date(item.resolvedAt).toLocaleString('vi-VN')}</>}
+  </p>;
+
+  async function resolve(event) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    setBusy(true);
+    onError(null);
+    try {
+      await api.resolveReview(item.reference, {
+        action, targetClassId: data.get('targetClassId'), note: data.get('note'),
+      });
+      await onResolved();
+    } catch (error) {
+      onError(error);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <form onSubmit={resolve}>
+    <fieldset disabled={busy}>
+      <label>Xử lý giao dịch<select value={action} onChange={event => setAction(event.target.value)}>
+        <option value="TRANSFER">Chuyển sang lớp còn chỗ</option>
+        <option value="REFUND_DEMO">Ghi nhận hoàn tiền demo</option>
+      </select></label>
+      {action === 'TRANSFER' && <label>Lớp nhận cùng học phần<select name="targetClassId" required>
+        <option value="">Chọn lớp nhận</option>
+        {classes.map(item => <option key={item.id} value={item.id}>{item.classCode} · Còn {item.remainingSeats} chỗ</option>)}
+      </select></label>}
+      <label>Ghi chú xử lý<input name="note" required maxLength={255} /></label>
+      <button disabled={action === 'TRANSFER' && classes.length === 0}>Xác nhận xử lý</button>
+    </fieldset>
+  </form>;
 }
