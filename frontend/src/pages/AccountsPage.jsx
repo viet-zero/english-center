@@ -45,6 +45,8 @@ export default function AccountsPage({ onError }) {
     <ul>{accounts.filter(item => (item.username + ' ' + item.fullName).toLowerCase().includes(query.toLowerCase())).map(item =>
       <li key={item.id}>
         <strong>{item.username}</strong> · {item.fullName} · {item.status === 'ACTIVE' ? 'Đang hoạt động' : 'Đã khóa'}
+        {' · '}Sai mật khẩu {item.failedLoginCount ?? 0}/5
+        {item.lockReason && <> · {item.lockReason === 'FAILED_ATTEMPTS' ? 'Khóa do nhập sai' : 'Khóa bởi admin'}</>}
         {' · '}{item.roles?.split(',').map(role => roleNames[role]).join(', ')}
         <button className="outline" disabled={busy} onClick={() => { setSelected(item); setSaved(false); }}>Sửa {item.username}</button>
       </li>)}</ul>

@@ -111,3 +111,15 @@ Nhân viên đào tạo mở Danh mục đào tạo, admin mở Quản lý khóa
 Ngừng mở khóa hoặc học phần sẽ ẩn khỏi danh mục đăng ký mới. Hóa đơn cũ lưu học phí áp dụng lúc đăng ký. Backend chặn trùng tên khóa, thứ tự học phần, mã lớp, ngày kết thúc trước ngày bắt đầu và sĩ số thấp hơn số học viên đã đăng ký.
 
 Đặt DEMO_PASSWORD rồi chạy node database/demo-catalog-smoke.mjs để kiểm tra bằng tài khoản demo.training.mweokbew (hoặc DEMO_TRAINING_USERNAME), demo.admin, demo.student và demo.student2. Cần SEPAY_DEMO=true để kiểm thử hai đăng ký thanh toán demo. Bài test tạo danh mục riêng, kiểm tra thêm/sửa, phân quyền, dữ liệu không hợp lệ, sức chứa, hiển thị danh mục ngừng mở và học phí trên hóa đơn đã tạo.
+
+## Quên mật khẩu và khóa sau 5 lần sai
+
+Chạy migration 19-password-recovery.sql sau migration 18. Nạp config/auth-demo.example.ps1 vào terminal Spring Boot để bật AUTH_EMAIL_DEMO=true. AUTH_RESET_BASE_URL là URL React mà người kiểm thử mở được. Cập nhật email trong Quản lý tài khoản hoặc nhập Email khôi phục khi tạo tài khoản.
+
+Nhập sai mật khẩu liên tiếp 5 lần sẽ đặt LOCKED với lý do FAILED_ATTEMPTS và tăng auth_version để phiên cũ hết hiệu lực ở yêu cầu tiếp theo. Đăng nhập thành công, đổi mật khẩu thành công hoặc admin mở khóa sẽ đặt lại bộ đếm. Tài khoản không tồn tại và tài khoản bị khóa đều nhận thông báo đăng nhập chung.
+
+Bấm Quên mật khẩu ở màn hình đăng nhập và nhập email. Phản hồi luôn giống nhau cho email đã đăng ký hoặc chưa đăng ký. Admin mở Email khôi phục demo để đọc email giả lập và mở liên kết. Token được tạo bằng SecureRandom 256 bit, chỉ lưu SHA-256 trong password_reset, có hiệu lực 5 phút và dùng một lần. Yêu cầu mới thay thế token cũ; đổi mật khẩu hoặc admin chỉnh tài khoản làm token đang chờ hết hiệu lực. Liên kết mở lại được tài khoản tự khóa do nhập sai, còn tài khoản admin khóa phải được admin mở khóa. Đặt lại mật khẩu yêu cầu mật khẩu mới khác mật khẩu cũ, ít nhất 8 ký tự, có chữ hoa/chữ thường/chữ số và tối đa 72 byte UTF-8.
+
+Email giả lập lưu liên kết trong demo_email_outbox và chỉ admin đọc được khi chế độ demo bật. AUTH_EMAIL_DEMO=false tắt hộp thư và việc tạo email giả lập. Gửi email SMTP thật chưa được cấu hình. Liên kết email được đọc vào bộ nhớ giao diện rồi xóa khỏi thanh địa chỉ. Các API khôi phục công khai vẫn yêu cầu CSRF.
+
+Chạy node database/demo-password-recovery.mjs với DEMO_PASSWORD và DEMO_DB_PASSWORD. Test dùng tài khoản QA mới, email tên miền example.test, kiểm tra ngưỡng 5 lần, reset bộ đếm, nhiều phiên, email không tiết lộ tồn tại tài khoản, token thay thế/hết hạn/dùng lại, đặt lại đồng thời, khóa bởi admin, quyền hộp thư và CSRF. DEMO_DB_PASSWORD chỉ dùng để mô phỏng hết hạn trực tiếp trong english_center_demo cho tài khoản demo.recovery vừa tạo. Có thể đặt MYSQL_EXE nếu MySQL nằm ở vị trí khác. Không cần chờ thực tế 5 phút.

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { api } from '../services/api.js';
+import PasswordRecoveryPage from './PasswordRecoveryPage.jsx';
 
 export default function LoginPage({ onLogin }) {
+  const [forgot, setForgot] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   async function submit(event) {
@@ -13,13 +15,14 @@ export default function LoginPage({ onLogin }) {
     try {
       onLogin(await api.login(data.get('username').trim(), data.get('password')));
     } catch (failure) {
-      setError(failure.message);
+      setError(failure.status === 401 ? 'Tên đăng nhập hoặc mật khẩu không đúng.' : failure.message);
     } finally {
       form.elements.password.value = '';
       setBusy(false);
     }
   }
 
+  if (forgot) return <PasswordRecoveryPage onBack={() => setForgot(false)} />;
   return <section className="panel login">
     <h1>Đăng nhập</h1>
     <form onSubmit={submit}>
@@ -28,5 +31,6 @@ export default function LoginPage({ onLogin }) {
       {error && <p role="alert">{error}</p>}
       <button disabled={busy}>{busy ? 'Đang đăng nhập…' : 'Đăng nhập'}</button>
     </form>
+    <button className="outline" disabled={busy} onClick={() => setForgot(true)}>Quên mật khẩu</button>
   </section>;
 }

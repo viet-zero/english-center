@@ -6,6 +6,8 @@ import StudentRequestsPage from './pages/StudentRequestsPage.jsx';
 import CompletionPage from './pages/CompletionPage.jsx';
 import CashShiftPage from './pages/CashShiftPage.jsx';
 import RevenuePage from './pages/RevenuePage.jsx';
+import PasswordRecoveryPage from './pages/PasswordRecoveryPage.jsx';
+import DemoEmailPage from './pages/DemoEmailPage.jsx';
 import PasswordPage from './pages/PasswordPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import CatalogAdmin from './pages/CatalogAdmin.jsx';
@@ -23,11 +25,20 @@ const menus = {
   TEACHER: ['Giảng viên', [['week', 'Thời khóa biểu'], ['teach', 'Lớp giảng dạy'], ['results', 'Điểm tổng kết']]],
   TRAINING_STAFF: ['Đào tạo', [['week', 'Thời khóa biểu'], ['catalog', 'Danh mục đào tạo'], ['rooms', 'Xếp phòng'], ['exams', 'Lịch thi'], ['requests', 'Duyệt yêu cầu học viên'], ['results', 'Chốt kết quả cuối khóa']]],
   ACCOUNTANT: ['Kế toán', [['shifts', 'Ca thu tiền'], ['payment', 'Ghi nhận học phí'], ['revenue', 'Báo cáo doanh thu'], ['requests', 'Hoàn tiền yêu cầu hủy']]],
-  ADMIN: ['Quản trị viên', [['accounts', 'Quản lý tài khoản'], ['admin', 'Tạo tài khoản'], ['admin-catalog', 'Quản lý khóa học']]],
+  ADMIN: ['Quản trị viên', [['accounts', 'Quản lý tài khoản'], ['admin', 'Tạo tài khoản'], ['email-demo', 'Email khôi phục demo'], ['admin-catalog', 'Quản lý khóa học']]],
 };
 const scopes = { STUDENT: 'student', TEACHER: 'teacher', TRAINING_STAFF: 'training' };
 
 export default function App() {
+  const [resetToken, setResetToken] = useState(() => {
+    const url = new URL(window.location.href);
+    const token = url.searchParams.get('reset_token') ?? '';
+    if (token) {
+      url.searchParams.delete('reset_token');
+      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    }
+    return token;
+  });
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -84,6 +95,18 @@ export default function App() {
     }
   }
 
+  if (resetToken) return <>
+    <header><div className="header-inner"><strong>English Center</strong></div></header>
+    <main><PasswordRecoveryPage token={resetToken} onBack={() => {
+      setResetToken('');
+      setLoading(true);
+      setInvoiceId('');
+      setSelectedRole('');
+      setSelectedPage('');
+      api.me().then(setUser).catch(() => setUser(null)).finally(() => setLoading(false));
+    }} /></main>
+  </>;
+
   const roles = user?.roles.filter(role => menus[role]) ?? [];
   const role = roles.includes(selectedRole) ? selectedRole : roles[0];
   const links = role ? [...menus[role][1], ['password', 'Đổi mật khẩu']] : [];
@@ -127,6 +150,7 @@ export default function App() {
         {page === 'teach' && <AcademicsPage key="teacher" teacher onError={onError} />}
         {page === 'payment' && <PaymentForm onError={onError} />}
         {page === 'admin-catalog' && <CatalogAdmin onError={onError} />}
+        {page === 'email-demo' && <DemoEmailPage onError={onError} />}
         {page === 'shifts' && <CashShiftPage onError={onError} />}
         {page === 'revenue' && <RevenuePage onError={onError} />}
         {page === 'results' && <CompletionPage key={role} scope={role === 'STUDENT' ? 'student' : role === 'TEACHER' ? 'teacher' : 'training'} onError={onError} />}

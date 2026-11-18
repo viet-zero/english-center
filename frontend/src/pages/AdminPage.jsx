@@ -11,7 +11,7 @@ export default function AdminPage({ onError }) {
     event.preventDefault();
     const form = event.currentTarget;
     const fields = new FormData(form);
-    const account = Object.fromEntries(['fullName', 'username', 'password'].map(key => [key, fields.get(key)]));
+    const account = Object.fromEntries(['fullName', 'username', 'password', 'email'].map(key => [key, fields.get(key)]));
     const selected = fields.getAll('roles');
     setSaved(false);
     if (employee && !selected.length) {
@@ -41,6 +41,7 @@ export default function AdminPage({ onError }) {
     <form key={String(employee)} onSubmit={submit}>
       <fieldset disabled={busy}>
         <label>Họ và tên<input name="fullName" required maxLength={150} /></label>
+        <label>Email khôi phục<input name="email" type="email" maxLength={254} /></label>
         <label>Tên đăng nhập<input name="username" required maxLength={100} autoComplete="off" /></label>
         <label>Mật khẩu<input name="password" type="password" required minLength={8} maxLength={72} autoComplete="new-password" /></label>
         <label>{employee ? 'Mã nhân viên' : 'Mã học viên'}<input name="code" required maxLength={30} /></label>

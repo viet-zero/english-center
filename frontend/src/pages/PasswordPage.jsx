@@ -1,19 +1,14 @@
 import React, { useState } from 'react';
 import { api } from '../services/api.js';
+import { passwordError } from '../services/passwordRules.js';
 
 export default function PasswordPage({ onChanged, onError }) {
   const [busy, setBusy] = useState(false);
   async function submit(event) {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(event.currentTarget));
-    if (data.newPassword !== data.confirmPassword) {
-      onError(new Error('Xác nhận mật khẩu không khớp.'));
-      return;
-    }
-    if (!/[A-Z]/.test(data.newPassword) || !/[a-z]/.test(data.newPassword) || !/[0-9]/.test(data.newPassword)) {
-      onError(new Error('Mật khẩu mới cần có chữ hoa, chữ thường và chữ số.'));
-      return;
-    }
+    const invalid = passwordError(data.newPassword, data.confirmPassword);
+    if (invalid) { onError(new Error(invalid)); return; }
     setBusy(true);
     onError(null);
     try { await api.changePassword(data); onChanged(); }

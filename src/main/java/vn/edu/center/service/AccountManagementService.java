@@ -23,7 +23,7 @@ public class AccountManagementService {
 
     public List<Map<String, Object>> list() {
         return sql.queryForList("""
-                SELECT a.id, a.username, a.status, a.auth_version AS version,
+                SELECT a.id, a.username, a.status, a.auth_version AS version,a.failed_login_count AS failedLoginCount,a.lock_reason AS lockReason,
                        u.full_name AS fullName, u.phone, u.email, u.identity_number AS identityNumber,
                        (SELECT GROUP_CONCAT(r.role_id ORDER BY r.role_id)
                         FROM tai_khoan_vai_tro r WHERE r.account_id = a.id) AS roles,
@@ -71,7 +71,12 @@ public class AccountManagementService {
         for (String role : request.roles()) {
             sql.update("INSERT INTO tai_khoan_vai_tro(account_id,role_id) VALUES (?, ?)", id, role);
         }
-        sql.update("UPDATE tai_khoan SET status = ?, auth_version = auth_version + 1 WHERE id = ?", request.status(), id);
+        sql.update("""
+                UPDATE tai_khoan SET failed_login_count=IF(status='LOCKED' AND ?='ACTIVE',0,failed_login_count),
+                    status=?,lock_reason=?,
+                    auth_version=auth_version+1 WHERE id=?
+                """,request.status(),request.status(),"LOCKED".equals(request.status()) ? "ADMIN" : null,id);
+        sql.update("UPDATE password_reset SET used_at=CURRENT_TIMESTAMP WHERE account_id=? AND used_at IS NULL",id);
     }
 
     @Transactional
@@ -81,20 +86,22 @@ public class AccountManagementService {
         if (!passwords.matches(request.currentPassword(), hash)) {
             throw new IllegalArgumentException("Mật khẩu hiện tại không đúng.");
         }
-        if (!request.newPassword().equals(request.confirmPassword())) {
-            throw new IllegalArgumentException("Xác nhận mật khẩu không khớp.");
-        }
-        String next = request.newPassword();
-        if (next.getBytes(StandardCharsets.UTF_8).length > 72
-                || !next.matches("(?s).*[A-Z].*") || !next.matches("(?s).*[a-z].*")
-                || !next.matches("(?s).*[0-9].*")) {
-            throw new IllegalArgumentException("Mật khẩu cần chữ hoa, chữ thường, chữ số và tối đa 72 byte UTF-8.");
-        }
-        if (passwords.matches(next, hash)) throw new IllegalArgumentException("Mật khẩu mới phải khác mật khẩu hiện tại.");
-        sql.update("UPDATE tai_khoan SET password_hash = ?, auth_version = auth_version + 1 WHERE username = ?",
-                passwords.encode(next), username);
+        String encoded=encodeNewPassword(hash,request.newPassword(),request.confirmPassword());
+        sql.update("""
+                UPDATE tai_khoan SET password_hash=?,failed_login_count=0,auth_version=auth_version+1 WHERE username=?
+                """,encoded,username);
+        sql.update("UPDATE password_reset SET used_at=CURRENT_TIMESTAMP WHERE account_id=? AND used_at IS NULL",account.get("id"));
     }
 
+    public String encodeNewPassword(String currentHash,String next,String confirm) {
+        if (!next.equals(confirm)) throw new IllegalArgumentException("Xác nhận mật khẩu không khớp.");
+        if (next.length()<8 || next.getBytes(StandardCharsets.UTF_8).length>72
+                || !next.matches("(?s).*[A-Z].*") || !next.matches("(?s).*[a-z].*") || !next.matches("(?s).*[0-9].*")) {
+            throw new IllegalArgumentException("Mật khẩu cần ít nhất 8 ký tự, chữ hoa, chữ thường, chữ số và tối đa 72 byte UTF-8.");
+        }
+        if (passwords.matches(next,currentHash)) throw new IllegalArgumentException("Mật khẩu mới phải khác mật khẩu hiện tại.");
+        return passwords.encode(next);
+    }
     private String nullable(String value) { return value == null || value.isBlank() ? null : value.strip(); }
 
     public record Update(

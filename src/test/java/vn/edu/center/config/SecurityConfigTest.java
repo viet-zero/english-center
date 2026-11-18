@@ -40,7 +40,8 @@ class SecurityConfigTest {
 
     @BeforeEach
     void setUp() {
-        reset(accounts);
+        reset(accounts,context.getBean(vn.edu.center.service.LoginAttemptService.class));
+        when(context.getBean(vn.edu.center.service.LoginAttemptService.class).succeeded(any())).thenReturn(true);
         mvc = MockMvcBuilders.webAppContextSetup(context)
                 .addFilters(context.getBean("springSecurityFilterChain", jakarta.servlet.Filter.class))
                 .build();
@@ -124,6 +125,11 @@ class SecurityConfigTest {
         @Bean
         AccountRepository accounts() {
             return mock(AccountRepository.class);
+        }
+
+        @Bean
+        vn.edu.center.service.LoginAttemptService attempts() {
+            return mock(vn.edu.center.service.LoginAttemptService.class, withSettings().mockMaker("mock-maker-subclass"));
         }
 
         @Bean

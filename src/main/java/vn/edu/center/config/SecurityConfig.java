@@ -18,12 +18,14 @@ public class SecurityConfig {
     }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, vn.edu.center.service.AccountDetailsService accounts) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, vn.edu.center.service.AccountDetailsService accounts, vn.edu.center.service.LoginAttemptService attempts) throws Exception {
         http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/payments/sepay/webhook"));
         http.authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers(HttpMethod.GET, "/", "/index.html", "/favicon.ico",
                         "/api/auth/csrf", "/api/certificates/verify/*").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/auth/password/forgot", "/api/auth/password/reset").permitAll()
+                .requestMatchers("/api/admin/password-reset-emails").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
                 .requestMatchers(HttpMethod.PUT, "/api/auth/password").authenticated()
                 .requestMatchers("/api/accounting/**").hasRole("ACCOUNTANT")
@@ -55,10 +57,19 @@ public class SecurityConfig {
                         response.setStatus(HttpServletResponse.SC_FORBIDDEN)));
         http.formLogin(login -> login
                 .loginProcessingUrl("/api/auth/login")
-                .successHandler((request, response, authentication) ->
-                        response.setStatus(HttpServletResponse.SC_NO_CONTENT))
-                .failureHandler((request, response, exception) ->
-                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED)));
+                .successHandler((request, response, authentication) -> {
+                    if (attempts.succeeded(authentication)) response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+                    else {
+                        var session=request.getSession(false);
+                        if (session!=null) session.invalidate();
+                        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                })
+                .failureHandler((request, response, exception) -> {
+                    attempts.failed(request.getParameter("username"),exception);
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                }));
         http.logout(logout -> logout
                 .logoutUrl("/api/auth/logout")
                 .logoutSuccessHandler((request, response, authentication) ->

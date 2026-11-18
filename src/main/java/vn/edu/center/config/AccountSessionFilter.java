@@ -25,28 +25,33 @@ public class AccountSessionFilter extends OncePerRequestFilter {
         if (authentication != null
                 && !(authentication instanceof org.springframework.security.authentication.AnonymousAuthenticationToken)
                 && !(authentication.getPrincipal() instanceof SessionAccount)) {
-            expire(request, response);
+            expire(request, response, chain);
             return;
         }
         if (authentication != null && authentication.getPrincipal() instanceof SessionAccount previous) {
             try {
                 var current = (SessionAccount) accounts.loadUserByUsername(previous.getUsername());
                 if (!current.isEnabled() || current.version() != previous.version()) {
-                    expire(request, response);
+                    expire(request, response, chain);
                     return;
                 }
             } catch (UsernameNotFoundException missing) {
-                expire(request, response);
+                expire(request, response, chain);
                 return;
             }
         }
         chain.doFilter(request, response);
     }
 
-    private void expire(HttpServletRequest request, HttpServletResponse response) {
+    private void expire(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+            throws ServletException, IOException {
         var session = request.getSession(false);
         if (session != null) session.invalidate();
         SecurityContextHolder.clearContext();
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        if (java.util.Set.of("/api/auth/csrf","/api/auth/password/forgot","/api/auth/password/reset").contains(request.getServletPath())) {
+            chain.doFilter(request,response);
+        } else {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        }
     }
 }

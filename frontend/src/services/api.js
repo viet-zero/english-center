@@ -39,6 +39,9 @@ const id = encodeURIComponent;
 const json = (path, data, method) => post(path, JSON.stringify(data), 'application/json', method);
 
 export const api = {
+  forgotPassword: email => json('/auth/password/forgot', { email }),
+  resetPassword: data => json('/auth/password/reset', data),
+  passwordResetEmails: () => request('/admin/password-reset-emails'),
   cashShifts: () => request('/accounting/shifts'),
   openCashShift: data => json('/accounting/shifts', data),
   closeCashShift: (shiftId, data) => json('/accounting/shifts/' + id(shiftId) + '/close', data),

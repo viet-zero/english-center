@@ -92,3 +92,21 @@ test('training updates course, module and class with CSRF', async t => {
   await api.updateModule('module', updates[1][1]);
   await api.updateClass('class', updates[2][1]);
 });
+test('forgot and reset password send data in CSRF-protected POST bodies', async t => {
+  const email = 'qa@example.test';
+  const data = { token: 'sample-token', newPassword: 'UpdatedDemo2026!', confirmPassword: 'UpdatedDemo2026!' };
+  mockApi(t, [
+    csrf('forgot'),
+    { path: '/auth/password/forgot', method: 'POST', body: { message: 'Generic acknowledgement' }, check: options => {
+      assert.equal(options.headers['X-CSRF-TOKEN'], 'forgot');
+      assert.deepEqual(JSON.parse(options.body), { email });
+    } },
+    csrf('reset'),
+    { path: '/auth/password/reset', method: 'POST', status: 204, check: options => {
+      assert.equal(options.headers['X-CSRF-TOKEN'], 'reset');
+      assert.deepEqual(JSON.parse(options.body), data);
+    } },
+  ]);
+  await api.forgotPassword(email);
+  await api.resetPassword(data);
+});
