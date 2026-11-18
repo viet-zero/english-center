@@ -42,6 +42,8 @@ export default function TuitionPage({ invoiceId, onInvoice, onError }) {
     {invoice && <><p>Mã hóa đơn: <strong>{invoice.invoiceCode}</strong></p><dl className="totals">
       <div><dt>Phải thu</dt><dd>{money(invoice.totalDue)}</dd></div>
       <div><dt>Đã thu</dt><dd>{money(invoice.totalPaid)}</dd></div>
+      <div><dt>Đã hoàn tiền demo</dt><dd>{money(invoice.refundedAmount ?? 0)}</dd></div>
+      <div><dt>Giá trị bảo lưu</dt><dd>{money(invoice.reservedAmount ?? 0)}</dd></div>
       <div><dt>Còn thiếu</dt><dd>{money(invoice.remainingAmount)}</dd></div>
       <div><dt>Trạng thái</dt><dd><StatusBadge status={invoice.status} /></dd></div>
     </dl></>}

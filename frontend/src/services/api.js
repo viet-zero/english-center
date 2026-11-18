@@ -39,6 +39,13 @@ const id = encodeURIComponent;
 const json = (path, data, method) => post(path, JSON.stringify(data), 'application/json', method);
 
 export const api = {
+  studentRequests: () => request('/academics/student/requests'),
+  requestEnrollments: () => request('/academics/student/request-enrollments'),
+  submitStudentRequest: data => json('/academics/student/requests', data),
+  trainingRequests: () => request('/training/student-requests'),
+  reviewStudentRequest: (requestId, data) => json('/training/student-requests/' + id(requestId), data, 'PUT'),
+  studentRefunds: () => request('/payments/student-refunds'),
+  refundStudentRequest: (requestId, data) => json('/payments/student-refunds/' + id(requestId), data),
   accounts: () => request('/admin/accounts'),
   updateAccount: (accountId, data) => json('/admin/accounts/' + id(accountId), data, 'PUT'),
   changePassword: data => json('/auth/password', data, 'PUT'),

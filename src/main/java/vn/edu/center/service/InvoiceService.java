@@ -12,9 +12,11 @@ import vn.edu.center.repository.InvoiceRepository;
 @Transactional(readOnly = true)
 public class InvoiceService {
     private final InvoiceRepository invoices;
+    private final org.springframework.jdbc.core.JdbcTemplate sql;
 
-    public InvoiceService(InvoiceRepository invoices) {
+    public InvoiceService(InvoiceRepository invoices, org.springframework.jdbc.core.JdbcTemplate sql) {
         this.invoices = invoices;
+        this.sql = sql;
     }
 
     public InvoiceResponse findForStudent(String invoiceId, String studentId) {
@@ -23,7 +25,14 @@ public class InvoiceService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invoice not found"));
         return new InvoiceResponse(invoice.getId(), "HD" + invoices.findNumberById(invoice.getId()), invoice.getCreatedAt(),
                 invoice.getTotalDue(), invoice.getTotalPaid(),
-                invoice.getTotalDue().subtract(invoice.getTotalPaid()), invoice.getStatus());
+                invoice.getTotalDue().subtract(invoice.getTotalPaid()), invoice.getStatus(),
+                sql.queryForObject("SELECT COALESCE(SUM(amount),0) FROM hoan_tien_demo WHERE invoice_id=?",
+                        BigDecimal.class, invoice.getId()),
+                sql.queryForObject("""
+                        SELECT COALESCE(SUM(r.remaining_value),0) FROM yeu_cau_hoc_vien r
+                        JOIN chi_tiet_hoa_don d ON d.enrollment_id=r.enrollment_id
+                        WHERE d.invoice_id=? AND r.kind='HOLD' AND r.status='APPROVED'
+                        """, BigDecimal.class, invoice.getId()));
     }
 
     public String resolveId(String reference) {
@@ -31,5 +40,5 @@ public class InvoiceService {
     }
 
     public record InvoiceResponse(String id, String invoiceCode, LocalDateTime createdAt, BigDecimal totalDue,
-            BigDecimal totalPaid, BigDecimal remainingAmount, String status) {}
+            BigDecimal totalPaid, BigDecimal remainingAmount, String status, BigDecimal refundedAmount, BigDecimal reservedAmount) {}
 }

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import NotificationBell from './components/NotificationBell.jsx';
 import AcademicsPage from './pages/AcademicsPage.jsx';
 import AccountsPage from './pages/AccountsPage.jsx';
+import StudentRequestsPage from './pages/StudentRequestsPage.jsx';
 import PasswordPage from './pages/PasswordPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import CatalogAdmin from './pages/CatalogAdmin.jsx';
@@ -15,10 +16,10 @@ import WeekPage from './pages/WeekPage.jsx';
 import { api } from './services/api.js';
 
 const menus = {
-  STUDENT: ['Học viên', [['week', 'Thời khóa biểu'], ['courses', 'Đăng ký lớp'], ['study', 'Lớp của tôi'], ['tuition', 'Học phí']]],
+  STUDENT: ['Học viên', [['week', 'Thời khóa biểu'], ['courses', 'Đăng ký lớp'], ['study', 'Lớp của tôi'], ['tuition', 'Học phí'], ['requests', 'Hủy / Bảo lưu']]],
   TEACHER: ['Giảng viên', [['week', 'Thời khóa biểu'], ['teach', 'Lớp giảng dạy']]],
-  TRAINING_STAFF: ['Đào tạo', [['week', 'Thời khóa biểu'], ['catalog', 'Danh mục đào tạo'], ['rooms', 'Xếp phòng'], ['exams', 'Lịch thi']]],
-  ACCOUNTANT: ['Kế toán', [['payment', 'Ghi nhận học phí']]],
+  TRAINING_STAFF: ['Đào tạo', [['week', 'Thời khóa biểu'], ['catalog', 'Danh mục đào tạo'], ['rooms', 'Xếp phòng'], ['exams', 'Lịch thi'], ['requests', 'Duyệt yêu cầu học viên']]],
+  ACCOUNTANT: ['Kế toán', [['payment', 'Ghi nhận học phí'], ['requests', 'Hoàn tiền yêu cầu hủy']]],
   ADMIN: ['Quản trị viên', [['accounts', 'Quản lý tài khoản'], ['admin', 'Tạo tài khoản'], ['admin-catalog', 'Quản lý khóa học']]],
 };
 const scopes = { STUDENT: 'student', TEACHER: 'teacher', TRAINING_STAFF: 'training' };
@@ -115,6 +116,7 @@ export default function App() {
         {page === 'teach' && <AcademicsPage key="teacher" teacher onError={onError} />}
         {page === 'payment' && <PaymentForm onError={onError} />}
         {page === 'admin-catalog' && <CatalogAdmin onError={onError} />}
+        {page === 'requests' && <StudentRequestsPage key={role} scope={role === 'STUDENT' ? 'student' : role === 'ACCOUNTANT' ? 'accountant' : 'training'} onError={onError} />}
         {page === 'accounts' && <AccountsPage onError={onError} />}
         {page === 'password' && <PasswordPage onError={onError} onChanged={() => {
           setUser(null); setInvoiceId(''); setSelectedRole(''); setSelectedPage('');

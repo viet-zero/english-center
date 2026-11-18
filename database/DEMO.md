@@ -65,3 +65,13 @@ Chạy 14-account-management.sql một lần trước khi khởi động bản m
 Cả năm vai trò có mục Đổi mật khẩu. Nhập mật khẩu hiện tại, mật khẩu mới và xác nhận. Mật khẩu mới có ít nhất 8 ký tự, chữ hoa, chữ thường, chữ số và tối đa 72 byte UTF-8. Đổi mật khẩu yêu cầu đăng nhập lại. Khóa tài khoản, đổi quyền hoặc lưu thông tin tài khoản làm phiên cũ hết hiệu lực khi gửi yêu cầu tiếp theo, kể cả sau khi tài khoản được mở lại. Phiên cũ từ bản ứng dụng trước cũng phải đăng nhập lại.
 
 Đặt DEMO_PASSWORD bằng mật khẩu tài khoản demo.admin rồi chạy node database/demo-account-smoke.mjs. Test tạo riêng tài khoản nhân viên QA, kiểm tra danh sách, sửa, quyền, khóa/mở, phiên đồng thời, đổi mật khẩu, bản sửa cũ, giữ admin cuối và dữ liệu không hợp lệ.
+
+## Hủy lớp, bảo lưu và hoàn tiền demo
+
+Chạy migration 15-student-requests.sql một lần sau migration 14. Học viên mở Hủy / Bảo lưu, chọn đăng ký đã thanh toán đủ, loại yêu cầu và lý do. Chỉ được gửi khi lớp đã có lịch và số buổi đã kết thúc không quá 50% tổng buổi không bị hủy. Đào tạo mở Duyệt yêu cầu học viên để duyệt hoặc từ chối, bắt buộc có ghi chú. Hệ thống kiểm tra lại điều kiện tại thời điểm duyệt. Mỗi đăng ký có tối đa một yêu cầu chờ duyệt.
+
+Chính sách demo tính giá trị còn lại bằng số tiền thực đóng nhân số buổi còn lại chia tổng buổi, làm tròn xuống đồng. Số buổi đã học được xác định bằng thời điểm kết thúc buổi trên lịch, kể cả khi học viên vắng mặt. Duyệt hủy đặt đăng ký thành CANCELLED và chuyển khoản được hoàn sang kế toán. Duyệt bảo lưu đặt ON_HOLD, lưu giá trị bảo lưu và giải phóng chỗ. Học viên hết quyền xem nội dung lớp đã hủy/bảo lưu. Khôi phục học lại từ bảo lưu là nghiệp vụ tiếp theo.
+
+Kế toán mở Hoàn tiền yêu cầu hủy để xác nhận hoàn tiền demo cho yêu cầu hủy đã duyệt, với ghi chú/chứng từ demo. Cần PAYOS_DEMO=true. Hệ thống không chuyển tiền ngân hàng. Sổ hoàn tiền lưu riêng, giữ nguyên hóa đơn thu gốc. Hóa đơn hiển thị thêm số tiền đã hoàn demo và giá trị bảo lưu. Gửi lặp hoặc xác nhận đồng thời không sinh hai khoản hoàn.
+
+Kiểm thử node database/demo-student-requests.mjs cần DEMO_PASSWORD, DEMO_REQUEST_PREFIX và tùy chọn DEMO_TRAINING_USERNAME. Chuẩn bị bốn khóa/học phần/lớp demo mới, ID và mã lớp là prefix nối c, h, r, p; học phí 10000, sức chứa 2. Mỗi lớp có hai buổi, ba lớp c/h/r có một buổi đã kết thúc và một buổi tương lai, lớp p có cả hai buổi đã kết thúc. Cần lịch không trùng đăng ký khác của demo.student. Bài test thanh toán demo rồi kiểm tra hủy, bảo lưu, từ chối, vượt 50%, quyền sở hữu, gửi trùng, hoàn đồng thời, số chỗ và số tiền trên hóa đơn.
