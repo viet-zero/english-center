@@ -103,3 +103,11 @@ Chạy node database/demo-cash-shifts.mjs với DEMO_PASSWORD, DEMO_CASH_PREFIX,
 Bài kiểm thử SePay đầy đủ chạy bằng node database/demo-sepay-smoke.mjs, với DEMO_PASSWORD, SEPAY_WEBHOOK_API_KEY và DEMO_COURSE_ID/DEMO_MODULE_ID/DEMO_CLASS_ID của một lớp demo mới còn một chỗ. Backend cần SEPAY_DEMO=true và cùng SEPAY_WEBHOOK_API_KEY giả dùng cục bộ. Bài test gửi webhook qua HTTP, kiểm tra tiền ra, tài khoản sai, key sai, mã không khớp, nội dung có nhiều mã, code=null, thiếu tiền, tranh chỗ cuối, gửi lặp và thay đổi dữ liệu trên ID cũ. Bật demo cục bộ không cần key để dùng nút Thanh toán demo, nhưng webhook bên ngoài luôn cần key. Chỉ giao dịch PROCESSED mới có thể ghi danh. Giao dịch UNMATCHED hiển thị riêng ở kế toán và được tính là khoản nhận đang chờ đối soát trong báo cáo dòng tiền, không tạo hóa đơn hoặc đăng ký.
 
 Chưa kiểm thử kết nối SePay/ngân hàng thật khi chưa có cấu hình của nhóm. Chế độ SEPAY_DEMO là giả lập trong đồ án; SePay Test Mode là môi trường thử riêng trên tài khoản SePay, cần cấu hình webhook/API Key đúng như môi trường thật.
+
+## Quản lý danh mục đào tạo
+
+Nhân viên đào tạo mở Danh mục đào tạo, admin mở Quản lý khóa học. Hai vai trò dùng chung màn hình để tìm khóa học, thêm/sửa tên, mô tả và trạng thái khóa; thêm học phần theo thứ tự, sửa tên, học phí, thời lượng và trạng thái học phần; thêm lớp với giảng viên, ngày học và sức chứa, sửa sĩ số tối đa và trạng thái lớp. Lớp đã chốt kết quả hoặc đã hủy hiển thị khóa chỉnh sửa. Sau khi tạo lớp, nhân viên đào tạo tiếp tục xếp phòng và lịch học trong phân hệ Xếp phòng.
+
+Ngừng mở khóa hoặc học phần sẽ ẩn khỏi danh mục đăng ký mới. Hóa đơn cũ lưu học phí áp dụng lúc đăng ký. Backend chặn trùng tên khóa, thứ tự học phần, mã lớp, ngày kết thúc trước ngày bắt đầu và sĩ số thấp hơn số học viên đã đăng ký.
+
+Đặt DEMO_PASSWORD rồi chạy node database/demo-catalog-smoke.mjs để kiểm tra bằng tài khoản demo.training.mweokbew (hoặc DEMO_TRAINING_USERNAME), demo.admin, demo.student và demo.student2. Cần SEPAY_DEMO=true để kiểm thử hai đăng ký thanh toán demo. Bài test tạo danh mục riêng, kiểm tra thêm/sửa, phân quyền, dữ liệu không hợp lệ, sức chứa, hiển thị danh mục ngừng mở và học phí trên hóa đơn đã tạo.

@@ -75,3 +75,20 @@ test('preserves forbidden and expired-session status', async t => {
   await assert.rejects(api.invoice('other'), { status: 403 });
   await assert.rejects(api.me(), { status: 401 });
 });
+test('training updates course, module and class with CSRF', async t => {
+  const updates = [
+    ['/training/courses/course', { name: 'English', description: 'Updated', status: 'ACTIVE' }],
+    ['/training/modules/module', { name: 'Basics', tuition: 12000, durationHours: 36, status: 'ACTIVE' }],
+    ['/training/classes/class', { maxStudents: 4, status: 'OPEN' }],
+  ];
+  mockApi(t, updates.flatMap(([path, data]) => [
+    csrf('catalog-update'),
+    { path, method: 'PUT', body: data, check: options => {
+      assert.equal(options.headers['X-CSRF-TOKEN'], 'catalog-update');
+      assert.deepEqual(JSON.parse(options.body), data);
+    } },
+  ]));
+  await api.updateCourse('course', updates[0][1]);
+  await api.updateModule('module', updates[1][1]);
+  await api.updateClass('class', updates[2][1]);
+});
