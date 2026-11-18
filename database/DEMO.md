@@ -49,3 +49,5 @@ Chạy migration `12-payos.sql` một lần sau `11-seat-holds-attendance-alerts
 ## Nút thanh toán demo
 
 Đặt PAYOS_DEMO=true khi chạy Spring Boot. Chế độ này dùng MySQL demo và không cần key payOS. Học viên chọn khóa học, lớp, bấm Thanh toán rồi Thanh toán demo. Backend lấy số tiền từ đơn thuộc học viên đăng nhập và chạy cùng nghiệp vụ xác nhận thanh toán. Bấm lặp dùng cùng mã giao dịch để tránh thu hoặc ghi danh hai lần. Khi lớp đầy, kế toán xem danh sách đối soát. Khi PAYOS_DEMO=false, endpoint thanh toán demo trả 404.
+
+Kiểm thử hai thanh toán demo đồng thời bằng node database/demo-payment-race.mjs. Đặt DEMO_PASSWORD và ba biến DEMO_COURSE_ID, DEMO_MODULE_ID, DEMO_CLASS_ID trỏ đến khóa, học phần và lớp demo mới chỉ có một chỗ. Lớp cần một lịch học tại Phong 101 để khớp dữ liệu seed. Backend phải bật PAYOS_DEMO=true. Bài test tạo hai đơn, gửi hai yêu cầu thanh toán đồng thời, kiểm tra một người ghi danh, hóa đơn còn 0 đồng, giao dịch kia vào danh sách kế toán, gửi lặp và quyền truy cập.
