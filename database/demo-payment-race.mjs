@@ -88,11 +88,11 @@ for (let index = 0; index < clients.length; index++) {
   assert.deepEqual(ok(await clients[index].post(
     '/enrollments/checkout/' + orders[index].orderCode + '/demo-payment', {})), results[index]);
 }
-const reviews = ok(await accountant.request('/payments/payos/reviews'));
-const review = reviews.filter(item => item.reference === 'DEMO-' + orders[loserIndex].orderCode);
+const reviews = ok(await accountant.request('/payments/reviews'));
+const review = reviews.filter(item => item.reference === 'SEPAY-DEMO-' + orders[loserIndex].orderCode);
 assert.equal(review.length, 1);
 assert.equal(review[0].reason, 'Lớp đã hết chỗ.');
 assert.equal(Number(review[0].receivedAmount), orders[loserIndex].amount);
-assert.equal((await student.request('/payments/payos/reviews')).status, 403);
+assert.equal((await student.request('/payments/reviews')).status, 403);
 console.log(JSON.stringify({ classId, results, invoiceCode: invoice.invoiceCode, remainingAmount: invoice.remainingAmount, review: review[0] }, null, 2));
 console.log('PASS: simultaneous demo payments, one seat, paid invoice, accountant review, retries and permissions');

@@ -19,7 +19,7 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, vn.edu.center.service.AccountDetailsService accounts) throws Exception {
-        http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/payments/payos/webhook"));
+        http.csrf(csrf -> csrf.ignoringRequestMatchers("/api/payments/sepay/webhook"));
         http.authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 .requestMatchers(HttpMethod.GET, "/", "/index.html", "/favicon.ico",
@@ -30,8 +30,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/admin/accounts", "/api/admin/accounts/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/users/students").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/users/employees").hasRole("ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/payments/payos/webhook").permitAll()
-                .requestMatchers("/api/payments/payos/reviews", "/api/payments/payos/reviews/**").hasRole("ACCOUNTANT")
+                .requestMatchers(HttpMethod.POST, "/api/payments/sepay/webhook").permitAll()
+                .requestMatchers("/api/payments/reviews", "/api/payments/reviews/**", "/api/payments/sepay/unmatched",
+                        "/api/payments/payos/reviews", "/api/payments/payos/reviews/**").hasRole("ACCOUNTANT")
                 .requestMatchers("/api/payments/student-refunds", "/api/payments/student-refunds/**").hasRole("ACCOUNTANT")
                 .requestMatchers(HttpMethod.POST, "/api/academics/student/requests").hasRole("STUDENT")
                 .requestMatchers("/api/enrollments", "/api/enrollments/**").hasRole("STUDENT")

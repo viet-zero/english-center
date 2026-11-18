@@ -23,11 +23,12 @@ public class EnrollmentService {
     private final InvoiceItemRepository items;
     private final NotificationService notifications;
     private final CashShiftService shifts;
+    private final SePayClient sepay;
 
     public EnrollmentService(StudentRepository students, ClassroomRepository classes,
             ModuleRepository modules, CourseRepository courses, EnrollmentRepository enrollments,
             InvoiceRepository invoices, InvoiceItemRepository items, JdbcTemplate sql,
-            NotificationService notifications, CashShiftService shifts) {
+            NotificationService notifications, CashShiftService shifts, SePayClient sepay) {
         this.sql = sql;
         this.students = students;
         this.classes = classes;
@@ -38,6 +39,7 @@ public class EnrollmentService {
         this.items = items;
         this.notifications = notifications;
         this.shifts = shifts;
+        this.sepay = sepay;
     }
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
@@ -53,22 +55,22 @@ public class EnrollmentService {
         }
         if (amount <= 0) throw new IllegalStateException("Học phí phải lớn hơn 0.");
         long code = UUID.randomUUID().getLeastSignificantBits() & ((1L << 52) - 1);
-        sql.update("INSERT INTO don_payos (order_code, student_id, class_id, amount) VALUES (?, ?, ?, ?)",
-                code, studentId, classId, amount);
-        return new Checkout(code, amount, "PENDING", null, null);
+        var link=sepay.create(code,amount);
+        sql.update("""
+                INSERT INTO don_thanh_toan(order_code,student_id,class_id,amount,provider,link_id,checkout_url,receiving_account)
+                VALUES (?,?,?,?,'SEPAY',?,?,?)
+                """,code,studentId,classId,amount,link.paymentLinkId(),link.checkoutUrl(),link.accountNumber());
+        return checkout(studentId,code);
     }
-
-    public void attachLink(long code, PayOsClient.Link link) {
-        sql.update("UPDATE don_payos SET link_id = ?, checkout_url = ? WHERE order_code = ?",
-                link.paymentLinkId(), link.checkoutUrl(), code);
-    }
-
     public Checkout checkout(String studentId, long code) {
         return sql.query("""
-                SELECT order_code, amount, status, checkout_url, invoice_id
-                FROM don_payos WHERE order_code = ? AND student_id = ?
+                SELECT order_code, amount, status, checkout_url, invoice_id, provider, receiving_account
+                FROM don_thanh_toan WHERE order_code = ? AND student_id = ?
                 """, (row, index) -> new Checkout(row.getLong("order_code"), row.getInt("amount"),
-                row.getString("status"), row.getString("checkout_url"), row.getString("invoice_id")),
+                row.getString("status"), row.getString("checkout_url"), row.getString("invoice_id"), row.getString("provider"),
+                "SEPAY".equals(row.getString("provider")) ? "EC"+code : null,
+                "SEPAY".equals(row.getString("provider")) ? row.getString("checkout_url") : null,
+                row.getString("receiving_account")),
                 code, studentId).stream().findFirst().orElseThrow(() ->
                         new org.springframework.web.server.ResponseStatusException(
                                 org.springframework.http.HttpStatus.NOT_FOUND));
@@ -81,7 +83,7 @@ public class EnrollmentService {
                        r.target_class_id AS targetClassId, r.resolved_invoice_id AS resolvedInvoiceId,
                        o.student_id AS studentId,
                        c.class_code AS classCode, r.received_at AS receivedAt
-                FROM bien_nhan_payos r JOIN don_payos o ON o.order_code = r.order_code
+                FROM bien_nhan_thanh_toan r JOIN don_thanh_toan o ON o.order_code = r.order_code
                 JOIN lop_hoc c ON c.id = o.class_id
                 WHERE r.reason IS NOT NULL ORDER BY r.received_at DESC
                 """);
@@ -91,27 +93,27 @@ public class EnrollmentService {
     public void settle(long code, String linkId, String reference, long amount) {
         var matches = sql.query("""
                 SELECT student_id, class_id, amount, link_id, status
-                FROM don_payos WHERE order_code = ? FOR UPDATE
+                FROM don_thanh_toan WHERE order_code = ? FOR UPDATE
                 """, (row, index) -> new Order(row.getString("student_id"), row.getString("class_id"),
                 row.getInt("amount"), row.getString("link_id"), row.getString("status")), code);
-        if (matches.isEmpty()) return; // payOS sends a sample event when registering the webhook.
+        if (matches.isEmpty()) throw new IllegalStateException("Không tìm thấy đơn thanh toán.");
         Order order = matches.getFirst();
         if (!linkId.equals(order.linkId())) {
             throw new org.springframework.web.server.ResponseStatusException(
                     org.springframework.http.HttpStatus.CONFLICT, "Payment link is not associated with this order");
         }
-        if (sql.queryForObject("SELECT COUNT(*) FROM bien_nhan_payos WHERE reference = ?",
+        if (sql.queryForObject("SELECT COUNT(*) FROM bien_nhan_thanh_toan WHERE reference = ?",
                 Long.class, reference) > 0) return;
 
         Student student = students.findLockedById(order.studentId()).orElseThrow();
         Classroom classroom = classes.findLockedById(order.classId()).orElseThrow();
         String reason = reviewReason(order, student, classroom, amount);
-        sql.update("INSERT INTO bien_nhan_payos (reference, order_code, amount, reason) VALUES (?, ?, ?, ?)",
+        sql.update("INSERT INTO bien_nhan_thanh_toan (reference, order_code, amount, reason) VALUES (?, ?, ?, ?)",
                 reference, code, amount, reason);
         if (reason != null) {
-            int updated = sql.update("UPDATE don_payos SET status = 'REVIEW' WHERE order_code = ? AND status = 'PENDING'", code);
+            int updated = sql.update("UPDATE don_thanh_toan SET status = 'REVIEW' WHERE order_code = ? AND status = 'PENDING'", code);
             if (updated == 1) {
-                notifications.notifyStudent(order.studentId(), "Kế toán đang đối soát giao dịch payOS " + code + ".");
+                notifications.notifyStudent(order.studentId(), "Kế toán đang đối soát giao dịch thanh toán " + code + ".");
             }
             return;
         }
@@ -120,7 +122,7 @@ public class EnrollmentService {
                 INSERT INTO giao_dich (id, invoice_id, amount, paid_at, method, reference_code, status)
                 VALUES (?, ?, ?, CURRENT_TIMESTAMP, 'BANK_TRANSFER', ?, 'SUCCESS')
                 """, UUID.randomUUID().toString(), invoiceId, amount, reference);
-        sql.update("UPDATE don_payos SET status = 'ENROLLED', invoice_id = ? WHERE order_code = ?", invoiceId, code);
+        sql.update("UPDATE don_thanh_toan SET status = 'ENROLLED', invoice_id = ? WHERE order_code = ?", invoiceId, code);
         notifications.notifyStudent(order.studentId(),
                 "Đã thanh toán đủ và đăng ký thành công lớp " + classroom.getClassCode() + ".");
     }
@@ -141,7 +143,7 @@ public class EnrollmentService {
                 SELECT c.id, c.class_code AS classCode,
                        c.max_students - (SELECT COUNT(*) FROM dang_ky_hoc_phan e
                          WHERE e.class_id = c.id AND e.status IN ('CONFIRMED', 'COMPLETED')) AS remainingSeats
-                FROM bien_nhan_payos r JOIN don_payos o ON o.order_code = r.order_code
+                FROM bien_nhan_thanh_toan r JOIN don_thanh_toan o ON o.order_code = r.order_code
                 JOIN lop_hoc original ON original.id = o.class_id
                 JOIN lop_hoc c ON c.module_id = original.module_id
                 WHERE r.reference = ? AND r.reason IS NOT NULL AND r.resolution IS NULL
@@ -155,11 +157,11 @@ public class EnrollmentService {
         if ("TRANSFER".equals(action) && (targetId == null || targetId.isBlank())) {
             throw new IllegalArgumentException("Hãy chọn lớp nhận.");
         }
-        Long code = sql.query("SELECT order_code FROM bien_nhan_payos WHERE reference = ?",
+        Long code = sql.query("SELECT order_code FROM bien_nhan_thanh_toan WHERE reference = ?",
                 (row, index) -> row.getLong(1), reference).stream().findFirst().orElseThrow(() ->
                 new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.NOT_FOUND));
-        var order = sql.queryForMap("SELECT * FROM don_payos WHERE order_code = ? FOR UPDATE", code);
-        var receipt = sql.queryForMap("SELECT * FROM bien_nhan_payos WHERE reference = ? FOR UPDATE", reference);
+        var order = sql.queryForMap("SELECT * FROM don_thanh_toan WHERE order_code = ? FOR UPDATE", code);
+        var receipt = sql.queryForMap("SELECT * FROM bien_nhan_thanh_toan WHERE reference = ? FOR UPDATE", reference);
         if (receipt.get("reason") == null) throw new IllegalStateException("Giao dịch không cần đối soát.");
         if (receipt.get("resolution") != null) {
             if (action.equals(receipt.get("resolution"))
@@ -189,25 +191,25 @@ public class EnrollmentService {
                     INSERT INTO giao_dich(id, invoice_id, collected_by, amount, paid_at, method, reference_code, status)
                     VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, 'BANK_TRANSFER', ?, 'SUCCESS')
                     """, UUID.randomUUID().toString(), invoiceId, employeeId, received, reference);
-            sql.update("UPDATE don_payos SET status = 'ENROLLED', invoice_id = ? WHERE order_code = ?", invoiceId, code);
+            sql.update("UPDATE don_thanh_toan SET status = 'ENROLLED', invoice_id = ? WHERE order_code = ?", invoiceId, code);
             notifications.notifyStudent(studentId, "Kế toán đã chuyển khoản thanh toán sang lớp " + target.getClassCode() + ".");
         } else if ("REFUND_DEMO".equals(action)) {
-            if (!("demo-" + code).equals(order.get("link_id"))) {
+            if (!java.util.Set.of("demo-" + code,"sepay-demo-" + code).contains(order.get("link_id"))) {
                 throw new IllegalStateException("Chỉ ghi nhận hoàn tiền demo cho giao dịch demo.");
             }
             String shiftId=shifts.requireOpen(employeeId);
-            sql.update("UPDATE bien_nhan_payos SET refund_shift_id=? WHERE reference=?",shiftId,reference);
-            sql.update("UPDATE don_payos SET status = 'REFUNDED' WHERE order_code = ? AND status = 'REVIEW'", code);
+            sql.update("UPDATE bien_nhan_thanh_toan SET refund_shift_id=? WHERE reference=?",shiftId,reference);
+            sql.update("UPDATE don_thanh_toan SET status = 'REFUNDED' WHERE order_code = ? AND status = 'REVIEW'", code);
             notifications.notifyStudent(studentId, "Đã ghi nhận hoàn tiền demo cho đơn " + code + ".");
         } else {
             throw new IllegalArgumentException("Thao tác không hợp lệ.");
         }
         sql.update("""
-                UPDATE bien_nhan_payos SET resolution = ?, resolved_by = ?, resolved_at = CURRENT_TIMESTAMP,
+                UPDATE bien_nhan_thanh_toan SET resolution = ?, resolved_by = ?, resolved_at = CURRENT_TIMESTAMP,
                 target_class_id = ?, resolved_invoice_id = ?, resolution_note = ? WHERE reference = ?
                 """, action, employeeId, "TRANSFER".equals(action) ? targetId : null, invoiceId, note, reference);
     }
-    public record Checkout(long orderCode, int amount, String status, String checkoutUrl, String invoiceId) {}
+    public record Checkout(long orderCode, int amount, String status, String checkoutUrl, String invoiceId, String provider, String paymentCode, String qrUrl, String receivingAccount) {}
     private record Order(String studentId, String classId, int amount, String linkId, String status) {}
 
     private void verifyAvailable(Student student, Classroom classroom) {

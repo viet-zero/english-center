@@ -10,25 +10,29 @@ import org.springframework.web.server.ResponseStatusException;
 import vn.edu.center.dto.EnrollmentRequest;
 import vn.edu.center.service.CurrentUserService;
 import vn.edu.center.service.EnrollmentService;
-import vn.edu.center.service.PayOsClient;
+import vn.edu.center.service.SePayClient;
+import vn.edu.center.service.SePayWebhookService;
 
 @RestController
 public class EnrollmentController {
     private final EnrollmentService enrollments;
     private final CurrentUserService currentUser;
-    private final PayOsClient payOs;
+    private final SePayClient sepay;
+    private final SePayWebhookService webhooks;
 
-    public EnrollmentController(EnrollmentService enrollments, CurrentUserService currentUser, PayOsClient payOs) {
+    public EnrollmentController(EnrollmentService enrollments, CurrentUserService currentUser, SePayClient sepay,
+            SePayWebhookService webhooks) {
         this.enrollments = enrollments;
         this.currentUser = currentUser;
-        this.payOs = payOs;
+        this.sepay = sepay;
+        this.webhooks = webhooks;
     }
 
     @PostMapping("/api/enrollments/checkout")
     public EnrollmentService.Checkout checkout(Principal principal, @Valid @RequestBody EnrollmentRequest request) {
         String studentId = currentUser.studentId(principal);
         var order = enrollments.openCheckout(studentId, request.classId());
-        enrollments.attachLink(order.orderCode(), payOs.create(order.orderCode(), order.amount()));
+
         return enrollments.checkout(studentId, order.orderCode());
     }
 
@@ -39,33 +43,36 @@ public class EnrollmentController {
 
     @GetMapping("/api/enrollments/payment-mode")
     public Map<String, Boolean> paymentMode() {
-        return Map.of("demo", payOs.isDemo());
+        return Map.of("demo", sepay.isDemo());
     }
 
     @PostMapping("/api/enrollments/checkout/{code}/demo-payment")
     public EnrollmentService.Checkout demoPayment(Principal principal, @PathVariable long code) {
-        if (!payOs.isDemo()) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        if (!sepay.isDemo()) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         String studentId = currentUser.studentId(principal);
         var order = enrollments.checkout(studentId, code);
         // The stable reference makes retries idempotent.
-        enrollments.settle(code, "demo-" + code, "DEMO-" + code, order.amount());
+        if (!"SEPAY".equals(order.provider())) throw new ResponseStatusException(HttpStatus.CONFLICT,"Hãy tạo đơn SePay mới.");
+        if (!"PENDING".equals(order.status())) return order;
+        webhooks.accept(new SePayWebhookService.Event(code,order.receivingAccount(),
+                "in",java.math.BigDecimal.valueOf(order.amount()),order.paymentCode(),order.paymentCode(),"DEMO-"+code));
         return enrollments.checkout(studentId, code);
     }
 
-    @GetMapping("/api/payments/payos/reviews")
+    @GetMapping({"/api/payments/reviews","/api/payments/payos/reviews"})
     public List<Map<String, Object>> reviews() {
         return enrollments.paymentReviews();
     }
 
-    @GetMapping("/api/payments/payos/reviews/{reference}/classes")
+    @GetMapping({"/api/payments/reviews/{reference}/classes","/api/payments/payos/reviews/{reference}/classes"})
     public List<Map<String, Object>> reviewClasses(@PathVariable String reference) {
         return enrollments.reviewClasses(reference);
     }
 
-    @PostMapping("/api/payments/payos/reviews/{reference}/resolve")
+    @PostMapping({"/api/payments/reviews/{reference}/resolve","/api/payments/payos/reviews/{reference}/resolve"})
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void resolve(Principal principal, @PathVariable String reference, @Valid @RequestBody Resolution request) {
-        if ("REFUND_DEMO".equals(request.action()) && !payOs.isDemo()) {
+        if ("REFUND_DEMO".equals(request.action()) && !sepay.isDemo()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
         enrollments.resolveReview(reference, currentUser.employeeId(principal),
@@ -77,31 +84,15 @@ public class EnrollmentController {
             String targetClassId,
             @jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max = 255) String note) {}
 
-    @PostMapping("/api/payments/payos/webhook")
-    public Map<String, Boolean> webhook(@RequestBody Webhook event) {
-        var data = event.data();
-        if (!payOs.verify(data, event.signature())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-        }
-        if ("00".equals(data.get("code")) && "VND".equals(data.get("currency"))) {
-            long orderCode = positiveInteger(data.get("orderCode"));
-            long amount = positiveInteger(data.get("amount"));
-            if (!(data.get("paymentLinkId") instanceof String linkId) || linkId.isBlank()
-                    || !(data.get("reference") instanceof String reference)
-                    || reference.isBlank() || reference.length() > 100) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-            }
-            enrollments.settle(orderCode, linkId, reference, amount);
-        }
-        return Map.of("success", true);
-    }
+    @GetMapping("/api/payments/sepay/unmatched")
+    public List<Map<String,Object>> unmatched() { return webhooks.unmatched(); }
 
-    private long positiveInteger(Object value) {
-        if (value instanceof Number number && number.toString().matches("[1-9][0-9]{0,17}")) {
-            return number.longValue();
-        }
-        throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+    @PostMapping("/api/payments/sepay/webhook")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Map<String,Boolean> webhook(@RequestHeader(value="Authorization",required=false) String authorization,
+            @Valid @RequestBody SePayWebhookService.Event event) {
+        if (!sepay.authorize(authorization)) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        webhooks.accept(event);
+        return Map.of("success",true);
     }
-
-    public record Webhook(Map<String, Object> data, String signature) {}
 }

@@ -32,3 +32,4 @@ build/
 ### VS Code ###
 .vscode/
 /config/payos.local.ps1
+/config/sepay.local.ps1

@@ -51,13 +51,16 @@ export default function TuitionPage({ invoiceId, onInvoice, onError }) {
 }
 
 export function PaymentForm({ onError }) {
+  const [unmatched, setUnmatched] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [reviewLoading, setReviewLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
     function refresh() {
-      api.paymentReviews().then(items => { if (active) setReviews(items); })
+      Promise.all([api.paymentReviews(), api.unmatchedPayments()]).then(([items, events]) => {
+        if (active) { setReviews(items); setUnmatched(events); }
+      })
         .catch(error => { if (active) onError(error); })
         .finally(() => { if (active) setReviewLoading(false); });
     }
@@ -94,7 +97,7 @@ export function PaymentForm({ onError }) {
   return <section className="panel">
     <h2>Ghi nhận học phí</h2>
     <p>Cần mở ca thu tiền trước khi ghi nhận thu hoặc hoàn tiền demo.</p>
-    <h3>Đối soát và lịch sử giao dịch payOS</h3>
+    <h3>Đối soát và lịch sử giao dịch thanh toán</h3>
     {reviewLoading && <p>Đang tải giao dịch…</p>}
     {!reviewLoading && reviews.length === 0 && <p>Chưa có giao dịch cần đối soát.</p>}
     <ul>{reviews.map(item => <li key={item.reference}>
@@ -103,6 +106,12 @@ export function PaymentForm({ onError }) {
       Mã giao dịch {item.reference} · {item.reason}
       <ReviewActions item={item} onError={onError} onResolved={async () => setReviews(await api.paymentReviews())} />
     </li>)}</ul>
+    {unmatched.length > 0 && <>
+      <h3>Giao dịch SePay chưa khớp đơn</h3>
+      <ul>{unmatched.map(item => <li key={item.transactionId}>
+        Giao dịch {item.transactionId} · {money(item.amount)} · {item.content} · Tham chiếu {item.bankReference}
+      </li>)}</ul>
+    </>}
     <form onSubmit={submit}>
       <fieldset disabled={busy}>
         <label>Mã hóa đơn<input name="invoiceId" required maxLength={36} /></label>

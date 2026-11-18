@@ -14,9 +14,9 @@ import vn.edu.center.service.*;
 public class StudentRequestController {
     private final StudentRequestService requests;
     private final CurrentUserService users;
-    private final PayOsClient payments;
+    private final SePayClient payments;
 
-    public StudentRequestController(StudentRequestService requests, CurrentUserService users, PayOsClient payments) {
+    public StudentRequestController(StudentRequestService requests, CurrentUserService users, SePayClient payments) {
         this.requests = requests; this.users = users; this.payments = payments;
     }
 

@@ -109,9 +109,10 @@ export const api = {
   demoPayment: code => json('/enrollments/checkout/' + id(code) + '/demo-payment', {}),
   openCheckout: classId => json('/enrollments/checkout', { classId }),
   checkoutStatus: orderCode => request('/enrollments/checkout/' + id(orderCode)),
-  reviewClasses: reference => request('/payments/payos/reviews/' + id(reference) + '/classes'),
-  resolveReview: (reference, data) => json('/payments/payos/reviews/' + id(reference) + '/resolve', data),
-  paymentReviews: () => request('/payments/payos/reviews'),
+  reviewClasses: reference => request('/payments/reviews/' + id(reference) + '/classes'),
+  resolveReview: (reference, data) => json('/payments/reviews/' + id(reference) + '/resolve', data),
+  unmatchedPayments: () => request('/payments/sepay/unmatched'),
+  paymentReviews: () => request('/payments/reviews'),
   invoice: invoiceId => request('/invoices/' + id(invoiceId)),
   pay: (invoiceId, payment) => json('/invoices/' + id(invoiceId) + '/payments', payment),
 };

@@ -95,9 +95,9 @@ async function reviewPair(suffix,transfer) {
   const paid=await Promise.all(clients.map(async(client,index)=>ok(await client.post('/enrollments/checkout/'+orders[index].orderCode+'/demo-payment',{}))));
   assert.deepEqual(paid.map(item=>item.status).sort(),['ENROLLED','REVIEW']);
   const loser=paid.findIndex(item=>item.status==='REVIEW');
-  const reference='DEMO-'+orders[loser].orderCode;
+  const reference='SEPAY-DEMO-'+orders[loser].orderCode;
   const before=(await report()).summary;
-  assert.equal((await accountant.post('/payments/payos/reviews/'+reference+'/resolve',{
+  assert.equal((await accountant.post('/payments/reviews/'+reference+'/resolve',{
     action:transfer?'TRANSFER':'REFUND_DEMO',targetClassId:transfer?tag+'target':null,note:'Đối soát ca demo',
   })).status,204);
   if(transfer) assert.equal(Number((await report()).summary.received),Number(before.received),'Transfer must not count payOS money twice');

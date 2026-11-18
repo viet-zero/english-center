@@ -100,7 +100,7 @@ public class CashShiftService {
         if (to.isBefore(from) || from.getYear()<1000 || to.getYear()>9998) {
             throw new IllegalArgumentException("Khoảng ngày không hợp lệ.");
         }
-        // payOS receipts remain the original cash-flow event when reconciled into an invoice later.
+        // Online receipts keep their original date when reconciled into an invoice later.
         var days=sql.queryForList("""
                 SELECT DATE(event_at) AS day,SUM(received) AS received,SUM(refunded) AS refunded,
                        SUM(cash_received) AS cashReceived,SUM(cash_refunded) AS cashRefunded,
@@ -109,17 +109,19 @@ public class CashShiftService {
                     SELECT g.paid_at AS event_at,g.amount AS received,0 AS refunded,
                            IF(g.method='CASH',g.amount,0) AS cash_received,0 AS cash_refunded,0 AS pending_review
                     FROM giao_dich g WHERE g.status='SUCCESS'
-                      AND NOT EXISTS(SELECT 1 FROM bien_nhan_payos r JOIN don_payos o ON o.order_code=r.order_code
+                      AND NOT EXISTS(SELECT 1 FROM bien_nhan_thanh_toan r JOIN don_thanh_toan o ON o.order_code=r.order_code
                           WHERE r.reference=g.reference_code AND COALESCE(r.resolved_invoice_id,o.invoice_id)=g.invoice_id
                             AND (r.reason IS NULL OR r.resolution='TRANSFER'))
                     UNION ALL
                     SELECT r.received_at,r.amount,0,0,0,
                            IF(r.reason IS NOT NULL AND r.resolution IS NULL,r.amount,0)
-                    FROM bien_nhan_payos r
+                    FROM bien_nhan_thanh_toan r
                     UNION ALL
                     SELECT f.created_at,0,f.amount,0,IF(f.method='CASH',f.amount,0),0 FROM hoan_tien_demo f
                     UNION ALL
-                    SELECT r.resolved_at,0,r.amount,0,0,0 FROM bien_nhan_payos r WHERE r.resolution='REFUND_DEMO'
+                    SELECT received_at,amount,0,0,0,amount FROM sepay_su_kien WHERE status='UNMATCHED'
+                    UNION ALL
+                    SELECT r.resolved_at,0,r.amount,0,0,0 FROM bien_nhan_thanh_toan r WHERE r.resolution='REFUND_DEMO'
                 ) movements
                 WHERE event_at>=? AND event_at<? GROUP BY DATE(event_at) ORDER BY day
                 """,from.atStartOfDay(),to.plusDays(1).atStartOfDay());

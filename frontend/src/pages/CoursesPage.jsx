@@ -20,7 +20,7 @@ export default function CoursesPage({ onInvoice, onError }) {
   }, [order?.orderCode, order?.status]);
 
   useEffect(() => {
-    const code = sessionStorage.getItem('english-center.payos');
+    const code = sessionStorage.getItem('english-center.payment') ?? sessionStorage.getItem('english-center.payos');
     if (!code) return;
     let active = true;
     api.checkoutStatus(code).then(result => {
@@ -67,7 +67,7 @@ export default function CoursesPage({ onInvoice, onError }) {
   function payForClass(classId) {
     load(async () => {
       const checkout = await api.openCheckout(classId);
-      sessionStorage.setItem('english-center.payos', checkout.orderCode);
+      sessionStorage.setItem('english-center.payment', checkout.orderCode);
       setOrder(checkout);
     });
   }
@@ -81,13 +81,18 @@ export default function CoursesPage({ onInvoice, onError }) {
       </select></label>
     </div>
     {order && <article aria-live="polite">
-      <h3>{demo ? "Đơn thanh toán demo" : "Đơn payOS"} {order.orderCode}</h3>
+      <h3>{demo ? "Đơn thanh toán demo" : "Đơn SePay"} {order.orderCode}</h3>
       <p>Học phí {money(order.amount)}</p>
       {order.status === 'PENDING' && <>
         <p>Đang chờ xác nhận đủ tiền. Chỗ trống được kiểm tra khi tiền về.</p>
-        {order.checkoutUrl
-          ? <a href={order.checkoutUrl} target="_blank" rel="noreferrer">Mở mã QR payOS</a>
-          : demo && <>
+        {order.qrUrl
+          ? <div>
+            <img src={order.qrUrl} alt={'QR chuyển khoản SePay cho đơn ' + order.paymentCode}
+              style={{ width: 'min(100%, 320px)', height: 'auto' }} referrerPolicy="no-referrer" />
+            <p>Nội dung chuyển khoản <strong>{order.paymentCode}</strong></p>
+            <p>Tài khoản nhận {order.receivingAccount}</p>
+          </div>
+          : demo && order.provider === "SEPAY" && <>
             <p>Thanh toán giả lập cho đồ án.</p>
             <button disabled={busy} onClick={() => load(async () => {
               setOrder(await api.demoPayment(order.orderCode));
@@ -104,6 +109,7 @@ export default function CoursesPage({ onInvoice, onError }) {
         <p>Đã thanh toán đủ và đăng ký lớp thành công.</p>
         <button onClick={() => onInvoice(order.invoiceId)}>Xem hóa đơn</button>
       </>}
+      {order.provider === "PAYOS" && order.status === "PENDING" && <p>Đơn cũ từ payOS. Hãy chọn lớp để tạo đơn SePay mới.</p>}
       {order.status === 'REFUNDED' && <p>Đã ghi nhận hoàn tiền demo.</p>}
       {order.status === 'REVIEW' && <p>Kế toán đang đối soát khoản chuyển này. Lớp chưa được ghi danh.</p>}
     </article>}
@@ -120,7 +126,7 @@ export default function CoursesPage({ onInvoice, onError }) {
         </li>)}
       </ul></details> : <p>Chưa có lịch học.</p>}
       <button disabled={busy || item.remainingSeats <= 0}
-        onClick={() => payForClass(item.id)}>{demo ? "Thanh toán" : "Tạo mã QR payOS"}</button>
+        onClick={() => payForClass(item.id)}>{demo ? "Thanh toán" : "Tạo mã QR SePay"}</button>
     </article>)}</div>
   </section>;
 }
