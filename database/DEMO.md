@@ -1,5 +1,14 @@
 # Demo tích hợp English Center
 
+## Chạy chung bằng một file trên Windows
+
+Bật dịch vụ MySQL và chuẩn bị schema demo cùng các migration trước. Nhấp đúp `start-demo.cmd` ở thư mục gốc dự án (hoặc chạy `.\start-demo.cmd` trong terminal). Nhập mật khẩu MySQL khi được hỏi; mật khẩu không được lưu vào file.
+
+Script chọn JDK từ 21 trở lên, bật Spring Boot ở 8085 với SePay demo, bật React ở 5175 rồi mở trình duyệt. Nếu ứng dụng đã chạy thì dùng lại, không bật trùng. Log nằm trong `%TEMP%\english-center-demo`. Backend và frontend chạy nền sau khi cửa sổ script đóng; script không tự tạo hay xóa dữ liệu MySQL.
+
+Frontend mặc định nối backend `http://127.0.0.1:8085`, không cần đặt `BACKEND_URL`. Biến này vẫn dùng được khi bạn muốn đổi backend khác.
+
+
 Tạo một schema MySQL trống tên `english_center_demo` và chọn nó làm mặc định trong Workbench. Chạy `schema.sql` rồi `06-academics.sql`, sau đó đặt biến phiên MySQL `@demo_password_hash` thành hash BCrypt do bạn tạo cục bộ. Chạy `demo-seed.sql` trong cùng kết nối. Có thể tạo hash bằng `new BCryptPasswordEncoder().encode(password)` trong Java với thư viện Spring Security Crypto của dự án. Giữ mật khẩu và hash bên ngoài Git.
 
 Mở PowerShell tại thư mục gốc dự án và chạy các lệnh dưới đây. Lệnh đầu đặt biến môi trường `DB_PASSWORD` cho phiên PowerShell hiện tại. Khi được hỏi, nhập mật khẩu MySQL của tài khoản cấu hình trong ứng dụng.
@@ -17,7 +26,6 @@ Mở terminal khác trong thư mục frontend.
 
 ```powershell
 npm ci
-$env:BACKEND_URL = 'http://127.0.0.1:8085'
 npm run dev -- --host 127.0.0.1 --port 5175 --strictPort
 ```
 
